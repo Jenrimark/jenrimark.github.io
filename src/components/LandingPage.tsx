@@ -244,7 +244,7 @@ export default function LandingPage() {
 
                 {/* 右组：简历 / 知识库 / GitHub */}
                 <div ref={rightGroupRef} className="flex items-center gap-2 sm:gap-3">
-                  <MenuSlot href="https://jenrimark.github.io" label="履历书" text="履历书">
+                  <MenuSlot href="https://jenrimark.github.io/acad-homepage/" label="履历书" text="履历书">
                     <FileTextSvg />
                   </MenuSlot>
                   <MenuSlot href="https://fcn9od35aepq.feishu.cn/wiki/R1R3wPuzTioFtNkOnELcUJJLnBh?from=from_copylink" label="知识库" text="知识库" newTab>
@@ -376,7 +376,7 @@ export default function LandingPage() {
                 <span className="text-sm font-medium text-gray-900">18471609769</span>
               </a>
               <a
-                href="https://jenrimark.github.io"
+                href="https://jenrimark.github.io/acad-homepage/"
                 className="flex flex-col gap-1 p-5 rounded-2xl border border-gray-200 bg-white hover:border-gray-400 hover:-translate-y-0.5 transition-all"
               >
                 <span className="text-xs text-gray-400">履历书</span>
