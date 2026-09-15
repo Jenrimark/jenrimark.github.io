@@ -262,9 +262,6 @@ export default function LandingPage() {
           <div className="flex-1 flex flex-col items-center justify-center text-center min-h-[2rem]">
             {/* TEMP-面试作业：临时悬浮窗，点击跳转合租助手（http://8.163.10.100/），演示结束后删除 */}
             <div className="mb-6 flex flex-col items-center gap-2.5">
-              <span className="rounded-full bg-white/95 px-4 py-1 text-xs font-bold tracking-wide text-orange-600 shadow-lg">
-                美团笔试附加题
-              </span>
               <a
                 href="http://8.163.10.100/"
                 target="_blank"
