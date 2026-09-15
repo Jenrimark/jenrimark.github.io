@@ -1,0 +1,138 @@
+---
+import '../styles/view.css';
+import { site } from '../site.config';
+import {
+  viewBackgrounds,
+  STORAGE_BG_ID,
+  STORAGE_BG_CUSTOM,
+  STORAGE_BG_DIM,
+  DEFAULT_BG_DIM,
+} from '../data/view-backgrounds';
+
+interface Props {
+  title?: string;
+}
+
+const { title = `View — ${site.name}` } = Astro.props;
+
+const viewBgPresets = Object.fromEntries(
+  viewBackgrounds.filter((b) => b.src).map((b) => [b.id, b.src]),
+);
+---
+
+<!doctype html>
+<html lang={site.locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <title>{title}</title>
+    <script is:inline>
+      (function () {
+        var m = localStorage.getItem('view:theme') || 'auto';
+        var r =
+          m === 'auto'
+            ? window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light'
+            : m;
+        document.documentElement.setAttribute('data-view-theme', r);
+        document.documentElement.setAttribute('data-view-theme-mode', m);
+      })();
+    </script>
+    <script
+      is:inline
+      define:vars={{
+        viewBgPresets,
+        storageBgId: STORAGE_BG_ID,
+        storageBgCustom: STORAGE_BG_CUSTOM,
+        storageBgDim: STORAGE_BG_DIM,
+        defaultBgDim: DEFAULT_BG_DIM,
+      }}
+    >
+      (function () {
+        try {
+          var id = localStorage.getItem(storageBgId) || 'default';
+          var src = null;
+          if (id === 'custom') {
+            src = localStorage.getItem(storageBgCustom);
+          } else if (viewBgPresets[id]) {
+            src = viewBgPresets[id];
+          }
+          if (!src) return;
+
+          var dimRaw = localStorage.getItem(storageBgDim);
+          var dim = dimRaw ? parseFloat(dimRaw) : defaultBgDim;
+          if (!isFinite(dim)) dim = defaultBgDim;
+          dim = Math.min(0.85, Math.max(0, dim));
+
+          var style = document.createElement('style');
+          style.id = 'view-bg-boot';
+          style.textContent =
+            '#view-bg{background-image:url(' +
+            JSON.stringify(src) +
+            ') !important;background-size:cover;background-position:center;background-repeat:no-repeat}' +
+            '#view-bg.view-bg--default{background-image:url(' +
+            JSON.stringify(src) +
+            ') !important}' +
+            (dim > 0 ? '#view-bg-dim{display:block !important;opacity:' + dim + ' !important}' : '');
+          document.head.appendChild(style);
+        } catch (_) {}
+      })();
+    </script>
+  </head>
+  <body class="view-body">
+    <!-- SVG：仅用于装饰层 feDisplacementMap + 噪声，不直接套在文字上 -->
+    <svg class="view-svg-filters" aria-hidden="true" width="0" height="0">
+      <defs>
+        <filter
+          id="view-liquid-smear"
+          x="-15%"
+          y="-15%"
+          width="130%"
+          height="130%"
+          filterUnits="objectBoundingBox"
+          color-interpolation-filters="sRGB"
+        >
+          <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="7" result="noise" />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="noise"
+            scale="10"
+            xChannelSelector="R"
+            yChannelSelector="G"
+          />
+        </filter>
+        <filter
+          id="view-liquid-smear-dark"
+          x="-15%"
+          y="-15%"
+          width="130%"
+          height="130%"
+          filterUnits="objectBoundingBox"
+          color-interpolation-filters="sRGB"
+        >
+          <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="7" result="noise" />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="noise"
+            scale="4"
+            xChannelSelector="R"
+            yChannelSelector="G"
+          />
+        </filter>
+      </defs>
+    </svg>
+    <div id="view-bg" class="view-bg view-bg--default" aria-hidden="true"></div>
+    <div id="view-bg-dim" class="view-bg-dim" aria-hidden="true"></div>
+    <slot />
+  </body>
+</html>

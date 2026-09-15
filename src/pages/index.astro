@@ -1,0 +1,17 @@
+---
+import LandingPage from '../components/LandingPage';
+import CursorFX from '../components/CursorFX.astro';
+import '../styles/landing.css';
+---
+
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jenrimark</title>
+  </head>
+  <body>
+    <CursorFX />
+    <LandingPage client:load />
+  </body>
+</html>

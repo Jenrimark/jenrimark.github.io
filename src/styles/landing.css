@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap');
+
+* {
+  font-family: 'Inter', sans-serif;
+}
+
+/* 阻止滚动到顶/底时的橡皮筋露白：页面底色与首屏视频色调一致 */
+html {
+  overscroll-behavior-y: none;
+  background-color: #0c0c0b;
+}
+
+body {
+  overscroll-behavior-y: none;
+  background-color: #0c0c0b;
+}

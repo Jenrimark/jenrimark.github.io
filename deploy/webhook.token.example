@@ -1,0 +1,2 @@
+# Copy to deploy/webhook.token and set a long random string (do not commit webhook.token)
+my-secret-change-me-to-random-string

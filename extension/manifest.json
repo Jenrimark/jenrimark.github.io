@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "Jenrimark View 书签桥",
+  "version": "0.1.3",
+  "description": "为 Jenrimark /view/ 起始页同步 Chrome 书签（仅本机，不上传）",
+  "permissions": ["bookmarks"],
+  "host_permissions": [
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "http://gd02.frp0.cc:23332/*",
+    "http://120.24.93.79:23332/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost/*/view",
+        "http://localhost/*/view/",
+        "http://localhost/*/view/*",
+        "http://127.0.0.1/*/view",
+        "http://127.0.0.1/*/view/",
+        "http://127.0.0.1/*/view/*",
+        "http://gd02.frp0.cc:23332/view",
+        "http://gd02.frp0.cc:23332/view/",
+        "http://gd02.frp0.cc:23332/view/*",
+        "http://120.24.93.79:23332/view",
+        "http://120.24.93.79:23332/view/",
+        "http://120.24.93.79:23332/view/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

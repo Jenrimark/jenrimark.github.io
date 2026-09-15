@@ -1,0 +1,35 @@
+# 家里机器 frpc 示例
+# 网站：公网 23332 → 本地 Nginx 8080（端口按 VPS 实际配置）
+
+serverAddr = "YOUR_VPS_IP"
+serverPort = 7000
+
+auth.token = "CHANGE_ME_LONG_RANDOM"
+
+
+# Keep control connection alive; avoids stale 23334 tunnel after idle (TCP connects, no HTTP response)
+heartbeatInterval = 30
+heartbeatTimeout = 90
+
+[[proxies]]
+name = "web-http"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 8080
+remotePort = 23332
+
+# HTTPS：若 VPS 终止 TLS，可再映射 443 → 本地 8443，或直接用 Caddy 自动证书
+# [[proxies]]
+# name = "web-https"
+# type = "tcp"
+# localIP = "127.0.0.1"
+# localPort = 8443
+# remotePort = 443
+
+# 供 GitHub Actions 触发家里 Webhook（示例：23334 → 9100）
+# [[proxies]]
+# name = "deploy-webhook"
+# type = "tcp"
+# localIP = "127.0.0.1"
+# localPort = 9100
+# remotePort = 23334

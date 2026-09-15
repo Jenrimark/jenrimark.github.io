@@ -1,0 +1,156 @@
+---
+// 白色光点 + 彩色粒子尾迹（Canvas 自绘，全局生效，零依赖）
+---
+
+<canvas id="cursor-fx" aria-hidden="true"></canvas>
+
+<style is:global>
+  #cursor-fx {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 99999;
+  }
+  /* 隐藏系统光标，由自绘光点接管 */
+  * {
+    cursor: none !important;
+  }
+  /* 系统偏好减弱动效：禁用特效并恢复系统光标 */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      cursor: auto !important;
+    }
+    #cursor-fx {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  (() => {
+    // 尊重系统「减弱动态效果」偏好
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const canvas = document.getElementById('cursor-fx') as HTMLCanvasElement | null;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let w = 0;
+    let h = 0;
+    const resize = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = window.innerWidth;
+      h = window.innerHeight;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    // 品牌色系粒子：粉 / 紫 / 青 / 奶白 / 玫红
+    const COLORS = ['#ff82be', '#826eeb', '#5aafff', '#f5f0e6', '#c85898'];
+    const MAX_PARTICLES = 110;
+    const particles: {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      life: number;
+      decay: number;
+      size: number;
+      color: string;
+    }[] = [];
+
+    let mx = -100;
+    let my = -100;
+    let px = -100;
+    let py = -100;
+    let hovering = false;
+
+    window.addEventListener('mousemove', (e) => {
+      mx = e.clientX;
+      my = e.clientY;
+      const t = e.target as Element | null;
+      hovering = Boolean(
+        t?.closest?.('a, button, input, textarea, select, [role="button"], summary')
+      );
+    });
+    document.addEventListener('mouseleave', () => {
+      mx = -100;
+      my = -100;
+    });
+
+    const spawn = () => {
+      if (particles.length >= MAX_PARTICLES) particles.shift();
+      const color = COLORS[(Math.random() * COLORS.length) | 0];
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 0.4 + Math.random() * 0.9;
+      particles.push({
+        x: mx,
+        y: my,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 1,
+        decay: 0.018 + Math.random() * 0.018,
+        size: 2 + Math.random() * 3.5,
+        color,
+      });
+    };
+
+    let raf = 0;
+    const frame = () => {
+      ctx.clearRect(0, 0, w, h);
+      ctx.globalCompositeOperation = 'lighter';
+
+      const inView = mx >= 0 && my >= 0;
+      if (inView) {
+        // 半透明白色光点：核心 + 柔光晕；悬停可交互元素时放大
+        const r = hovering ? 26 : 15;
+        const glow = ctx.createRadialGradient(mx, my, 0, mx, my, r);
+        glow.addColorStop(0, 'rgba(255,255,255,0.55)');
+        glow.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(mx, my, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctx.beginPath();
+        ctx.arc(mx, my, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 只有移动时才产生粒子尾迹
+        if (Math.hypot(mx - px, my - py) > 1.5) spawn();
+        px = mx;
+        py = my;
+      }
+
+      // 粒子飘散衰减
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.002;
+        p.life -= p.decay;
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * (0.4 + p.life * 0.6), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+  })();
+</script>

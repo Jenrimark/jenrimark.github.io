@@ -1,0 +1,205 @@
+---
+import ViewLayout from '../layouts/ViewLayout.astro';
+import ClearIcon from '../components/ClearIcon.astro';
+import SearchIcon from '../components/SearchIcon.astro';
+import { site } from '../site.config';
+import { searchEngines } from '../data/view-search';
+---
+
+<ViewLayout title={`View — ${site.name}`}>
+  <div class="view-page">
+    <header class="view-topbar">
+      <a href="/">← {site.name}</a>
+      <div class="view-topbar__actions view-glass view-glass--soft view-glass--pill">
+        <button
+          type="button"
+          id="view-theme-toggle"
+          class="view-btn view-btn--ghost view-theme-toggle"
+          aria-label="主题：自动"
+          title="主题：自动（点击切换）"
+          data-theme-mode="auto"
+        >
+          <span class="view-theme-toggle__icon" aria-hidden="true"></span>
+        </button>
+        <button
+          type="button"
+          id="view-bg-toggle"
+          class="view-btn view-btn--ghost"
+          aria-expanded="false"
+          aria-controls="view-bg-panel"
+        >
+          换背景
+        </button>
+        <time id="view-clock" class="view-clock" datetime=""></time>
+      </div>
+    </header>
+
+    <div id="view-bg-panel" class="view-bg-panel view-glass view-glass--strong view-glass--panel" hidden>
+      <p class="view-bg-panel__title">换背景</p>
+      <p class="view-bg-panel__lead">打开网页即可上传，选图后立刻生效，下次访问会自动恢复。</p>
+
+      <button type="button" id="view-bg-dropzone" class="view-bg-dropzone view-glass view-glass--soft view-glass--panel view-glass--dashed">
+        <span id="view-bg-dropzone-preview" class="view-bg-dropzone__preview" hidden></span>
+        <span id="view-bg-dropzone-icon" class="view-bg-dropzone__icon">+</span>
+        <span id="view-bg-dropzone-text" class="view-bg-dropzone__text">点击或拖入图片</span>
+        <span class="view-bg-dropzone__hint">jpg / png / webp · 建议 4MB 以内</span>
+      </button>
+
+      <input id="view-bg-upload" type="file" accept="image/*" hidden />
+
+      <div class="view-bg-custom-actions">
+        <button type="button" id="view-bg-default-btn" class="view-btn view-glass view-glass--soft view-glass--pill">恢复默认</button>
+        <button type="button" id="view-bg-clear-custom" class="view-btn view-glass view-glass--soft view-glass--pill" hidden>删除当前图片</button>
+      </div>
+
+      <div id="view-bg-dim-wrap" class="view-bg-dim-control" hidden>
+        <label for="view-bg-dim">壁纸暗化</label>
+        <input id="view-bg-dim" type="range" min="0" max="0.85" step="0.05" value="0.45" />
+        <span id="view-bg-dim-value" class="view-bg-dim-value">45%</span>
+      </div>
+    </div>
+
+    <section class="view-hero" aria-label="搜索">
+      <h1 class="view-greeting" id="view-greeting">你好</h1>
+
+      <div class="view-search-wrap">
+        <div class="view-search-anchor">
+          <div class="view-search-box">
+            <form id="view-search-form" class="view-search-form view-glass view-glass--strong view-glass--pill" role="search">
+              <input
+                id="view-search-input"
+                class="view-search-input"
+                type="text"
+                name="q"
+                enterkeyhint="search"
+                inputmode="search"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                aria-label="搜索"
+                aria-expanded="false"
+                aria-controls="view-suggest"
+                aria-autocomplete="list"
+              />
+              <button type="button" id="view-search-clear" class="view-search-clear" hidden aria-label="清空">
+                <ClearIcon />
+              </button>
+              <button type="submit" class="view-search-submit" aria-label="搜索">
+                <SearchIcon />
+              </button>
+            </form>
+          </div>
+
+          <div id="view-engines" class="view-engines" role="group" aria-label="搜索引擎">
+            {
+              searchEngines.map((engine) => (
+                <button
+                  type="button"
+                  class="view-engine view-glass view-glass--soft view-glass--pill"
+                  data-engine={engine.id}
+                  aria-pressed={engine.default ? 'true' : 'false'}
+                >
+                  {engine.label}
+                </button>
+              ))
+            }
+          </div>
+
+          <div id="view-suggest" class="view-suggest view-glass view-glass--strong view-glass--card" hidden>
+            <div class="view-suggest__cols">
+              <div class="view-suggest__col view-suggest__col--query">
+                <p class="view-suggest__col-title">搜索</p>
+                <ul id="view-suggest-query" class="view-suggest__list" role="listbox" aria-label="搜索候选"></ul>
+              </div>
+              <div class="view-suggest__col view-suggest__col--bookmarks">
+                <p class="view-suggest__col-title">书签</p>
+                <ul id="view-suggest-bookmarks" class="view-suggest__list" role="listbox" aria-label="书签"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="view-ext-banner view-glass view-glass--panel" id="view-ext-banner" aria-label="扩展安装">
+      <div class="view-ext-banner__main">
+        <div class="view-ext-banner__text">
+          <strong>书签自动同步</strong>
+          <span>需安装 Chrome 扩展（仅读取本机书签，不上传服务器）</span>
+        </div>
+        <a
+          class="view-btn view-btn--accent"
+          href="/downloads/jenrimark-view-extension.zip?v=0.1.3"
+          download="jenrimark-view-extension.zip"
+        >
+          下载扩展 v0.1.3 (.zip)
+        </a>
+      </div>
+      <details class="view-ext-install">
+        <summary>安装步骤（换设备可重新下载）</summary>
+        <ol>
+          <li>
+            下载并解压 zip，打开 <code>manifest.json</code> 确认
+            <code>"version": "0.1.3"</code> 且含
+            <code>120.24.93.79:23332</code>（旧包无此 IP 则扩展无效）
+          </li>
+          <li>
+            若本站 zip 仍是旧版，改用
+            <a
+              href="https://github.com/Jenrimark/Jenrimark/raw/main/public/downloads/jenrimark-view-extension.zip"
+              target="_blank"
+              rel="noopener noreferrer"
+            >GitHub 直链</a>（约 3.2 KB，manifest 约 1 KB）
+          </li>
+          <li>Chrome 打开 <code>chrome://extensions</code>，开启「开发者模式」</li>
+          <li>先移除旧扩展，再「加载已解压的扩展程序」选解压后的文件夹</li>
+          <li>刷新本页，状态应变为「已连接浏览器扩展」</li>
+        </ol>
+      </details>
+    </aside>
+
+    <section class="view-bookmarks-area" aria-label="书签">
+      <div class="view-toolbar">
+        <div>
+          <h2>书签</h2>
+          <p id="view-status" class="view-status">加载中…</p>
+        </div>
+        <div class="view-toolbar-actions">
+          <button type="button" id="view-folder-toggle" class="view-btn view-glass view-glass--soft view-glass--pill" aria-expanded="false">
+            文件夹筛选
+          </button>
+        </div>
+      </div>
+
+      <div id="view-folder-panel" class="view-folder-panel view-glass view-glass--panel">
+        <p class="view-folder-panel__hint">
+          点选要显示的文件夹；全选显示全部，全不选不显示书签。筛选偏好会保存在本机。
+        </p>
+        <div class="view-folder-panel__actions">
+          <button type="button" id="view-folder-select-all" class="view-folder-action">全选</button>
+          <button type="button" id="view-folder-clear" class="view-folder-action">全不选</button>
+        </div>
+        <div id="view-folder-list" class="view-folder-list" role="group" aria-label="文件夹"></div>
+      </div>
+
+      <div id="view-bookmarks" class="view-bookmarks">
+        <p class="view-empty view-glass view-glass--soft view-glass--card view-glass--dashed">正在加载书签…</p>
+      </div>
+    </section>
+  </div>
+</ViewLayout>
+
+<script>
+  import '../scripts/view-page';
+
+  const greetEl = document.getElementById('view-greeting');
+  if (greetEl) {
+    const h = new Date().getHours();
+    let text = '晚上好';
+    if (h < 6) text = '夜深了';
+    else if (h < 12) text = '早上好';
+    else if (h < 14) text = '中午好';
+    else if (h < 18) text = '下午好';
+    greetEl.textContent = text;
+  }
+</script>

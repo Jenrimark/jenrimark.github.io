@@ -1,0 +1,79 @@
+# ═══════════════════════════════════════
+# Jenrimark — 仅提交可构建、可部署的核心文件
+# ═══════════════════════════════════════
+
+# ─── Astro / Node 构建产物 ───
+dist/
+.astro/
+node_modules/
+*.tsbuildinfo
+
+# ─── 日志 ───
+logs/
+deploy-auto.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ─── 环境变量与证书（切勿提交）───
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# frp 真实配置（保留 deploy/frp/*.example 模板）
+deploy/frp/frpc.toml
+deploy/frp/frps.toml
+deploy/webhook.token
+frpc.toml
+frps.toml
+**/FRP/frpc.toml
+**/FRP/frps.toml
+
+# 本地草稿 / 笔记（含私密路径的教程放这里，勿提交）
+docs/
+
+# ─── 操作系统垃圾文件 ───
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ─── 编辑器 / IDE ───
+.idea/
+.cursor/
+*.swp
+*.swo
+*~
+
+# VS Code：忽略个人设置，保留共享配置
+.vscode/
+
+# ─── 测试 / 覆盖率（以后若添加）───
+coverage/
+.nyc_output/
+
+# ─── 缓存与临时文件 ───
+*.tmp
+*.temp
+.cache/
+.turbo/
+.vercel/
+.netlify/
+
+# Windows 误拷进仓库的运行目录
+nginx/logs/
+nginx/temp/
+nginx/cache/
+
+# 本地覆盖的部署脚本（含私密路径时可放这里）
+deploy/**/*.local.bat
+deploy/**/*.local.ps1
