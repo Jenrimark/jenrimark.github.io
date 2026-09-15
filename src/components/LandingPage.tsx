@@ -247,7 +247,7 @@ export default function LandingPage() {
                   <MenuSlot href="https://jenrimark.github.io" label="履历书" text="履历书">
                     <FileTextSvg />
                   </MenuSlot>
-                  <MenuSlot href="javascript:void(0)" label="知识库" text="知识库">
+                  <MenuSlot href="https://fcn9od35aepq.feishu.cn/wiki/R1R3wPuzTioFtNkOnELcUJJLnBh?from=from_copylink" label="知识库" text="知识库" newTab>
                     <BookOpenSvg />
                   </MenuSlot>
                   <MenuSlot href="https://github.com/Jenrimark" label="GitHub" newTab>
