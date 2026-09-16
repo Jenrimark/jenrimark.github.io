@@ -1,10 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="2048" height="2048" viewBox="0 0 2048 2048" version="1.1">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="1128" height="1128" viewBox="460 458 1128 1128" version="1.1">
   <title>Jenrimark — 東 — vector emblem</title>
   <desc>Reference-traced layered vector artwork. Outlined lettering and calligraphy; closed paths only. Solid #0F3830, #C49447, and #FFFFFF. Original 2048-square composition.</desc>
-  <g id="background" inkscape:groupmode="layer" inkscape:label="01 · 白色背景" fill="#FFFFFF" fill-rule="evenodd">
-    <path id="white-canvas" d="M 0 0 H 2048 V 2048 H 0 Z" />
-  </g>
   <g id="double-border" inkscape:groupmode="layer" inkscape:label="02 · 深墨绿双圆框" fill="#0F3830" fill-rule="evenodd">
     <path id="outer-ring" d="M 1564.24 1021.92 A 540.08 540.08 0 1 0 484.08 1021.92 A 540.08 540.08 0 1 0 1564.24 1021.92 Z M 1543.15 1021.92 A 518.99 518.99 0 1 0 505.17 1021.92 A 518.99 518.99 0 1 0 1543.15 1021.92 Z" />
     <path id="inner-ring" d="M 1525.91 1021.92 A 501.75 501.75 0 1 0 522.41 1021.92 A 501.75 501.75 0 1 0 1525.91 1021.92 Z M 1515.48 1021.92 A 491.32 491.32 0 1 0 532.84 1021.92 A 491.32 491.32 0 1 0 1515.48 1021.92 Z" />
