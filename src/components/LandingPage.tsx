@@ -386,8 +386,15 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 底部：备案号空间 */}
+        {/* 底部：品牌徽章 + 备案号空间 */}
         <footer className="py-10 text-center">
+          <div className="flex justify-center mb-4">
+            <img
+              src="/jenrimark-emblem.svg"
+              alt="Jenrimark 徽章"
+              className="w-12 h-12 opacity-60 hover:opacity-90 transition-opacity"
+            />
+          </div>
           <p className="text-sm text-gray-500">
             © {new Date().getFullYear()} 吴汉东 ·{' '}
             <span className="text-gray-400">
