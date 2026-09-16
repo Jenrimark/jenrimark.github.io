@@ -1,0 +1,44 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: server-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static site
+        run: npm run build
+        env:
+          SITE_URL: ${{ vars.SITE_URL || 'https://www.jenrimark.cn' }}
+
+      - name: Deploy via rsync over SSH
+        env:
+          DEPLOY_KEY: ${{ secrets.SERVER_DEPLOY_KEY }}
+        run: |
+          set -e
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 8.134.103.230 >> ~/.ssh/known_hosts 2>/dev/null
+          # 排除 .well-known（acme.sh 证书续期验证目录）
+          rsync -az --delete --exclude='.well-known' dist/ root@8.134.103.230:/var/www/jenrimark/
+          echo "Deploy OK: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
