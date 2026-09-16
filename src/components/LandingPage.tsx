@@ -390,7 +390,11 @@ export default function LandingPage() {
         <footer className="py-10 text-center">
           <p className="text-sm text-gray-500">
             © {new Date().getFullYear()} 吴汉东 ·{' '}
-            <span className="text-gray-400">鄂ICP备XXXXXXXX号（备案号待补充）</span>
+            <span className="text-gray-400">
+              <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-gray-600">
+                蜀ICP备2026055157号
+              </a>
+            </span>
           </p>
           <p className="mt-1 text-sm text-gray-400">
             <a href="https://github.com/Jenrimark" target="_blank" rel="noopener noreferrer" className="hover:text-gray-600">
