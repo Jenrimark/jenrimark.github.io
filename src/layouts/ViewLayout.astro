@@ -36,6 +36,22 @@ const viewBgPresets = Object.fromEntries(
     />
     <title>{title}</title>
     <script is:inline>
+      // 容灾：主站健康检测，异常时切换备用站 jenrimark.github.io
+      (function () {
+        var host = location.hostname;
+        var isMain = host === 'jenrimark.cn' || host === 'www.jenrimark.cn';
+        if (!isMain) return;
+        var attempts = 0;
+        function failover() {
+          if (attempts >= 2) { location.replace('https://jenrimark.github.io/'); return; }
+          fetch('/healthz?t=' + Date.now(), { method: 'HEAD', cache: 'no-store' })
+            .then(function (r) { if (r.ok) return; attempts++; setTimeout(failover, 3000); })
+            .catch(function () { attempts++; setTimeout(failover, 3000); });
+        }
+        setTimeout(failover, 800);
+      })();
+    </script>
+    <script is:inline>
       (function () {
         var m = localStorage.getItem('view:theme') || 'auto';
         var r =
