@@ -229,8 +229,17 @@ export default function LandingPage() {
               className="relative mx-auto px-4 sm:px-6 py-1.5 border border-transparent"
             >
               <div ref={rowRef} className="flex items-center justify-between">
-                {/* 左组：搜索 / 作品集 / 联系我 */}
+                {/* 左组：品牌徽章 / 搜索 / 作品集 / 联系我 */}
                 <div ref={leftGroupRef} className="flex items-center gap-2 sm:gap-3">
+                  {/* 品牌徽章 — 深墨绿金色原色，点击回首页 */}
+                  <a
+                    href="/"
+                    aria-label="Jenrimark 首页"
+                    title="Jenrimark 首页"
+                    className="flex items-center justify-center h-9 w-9 rounded-xl hover:bg-white/15 transition-colors duration-300"
+                  >
+                    <img src="/jenrimark-emblem.svg" alt="" className="w-7 h-7 rounded-full" />
+                  </a>
                   <MenuSlot href="/view/" label="快捷搜索">
                     <SearchSvg />
                   </MenuSlot>
