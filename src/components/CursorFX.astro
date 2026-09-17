@@ -1,5 +1,11 @@
 ---
-// 白色光点 + 彩色粒子尾迹（Canvas 自绘，全局生效，零依赖）
+// 品牌渐变圆环光标 + 光晕粒子尾迹（Canvas 自绘，全局生效，零依赖）
+// 特性：
+//  - 静止态：呼吸渐变圆环 + 中心光点，形态明确、有生命感
+//  - 移动态：圆环弹性拉伸慢跟随，光点快跟随，拖出渐变光晕粒子尾迹
+//  - 悬停态：圆环放大并出现柔光填充，提示可交互
+//  - 可见性：圆环带深色对比轮廓、中心点带深色微晕，深浅背景均清晰
+//  - 质感：粒子径向渐变 + lighter 叠加发光，通透去塑料感
 ---
 
 <canvas id="cursor-fx" aria-hidden="true"></canvas>
@@ -13,7 +19,7 @@
     pointer-events: none;
     z-index: 99999;
   }
-  /* 隐藏系统光标，由自绘光点接管 */
+  /* 隐藏系统光标，由自绘光标接管 */
   * {
     cursor: none !important;
   }
@@ -53,9 +59,20 @@
     resize();
     window.addEventListener('resize', resize);
 
-    // 品牌色系粒子：粉 / 紫 / 青 / 奶白 / 玫红
-    const COLORS = ['#ff82be', '#826eeb', '#5aafff', '#f5f0e6', '#c85898'];
-    const MAX_PARTICLES = 110;
+    const TAU = Math.PI * 2;
+    const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
+
+    // ── 品牌色系（带透明度的柔和光晕色）──
+    const P_COLORS = [
+      'rgba(255,130,190,0.8)', // 粉
+      'rgba(140,120,245,0.8)', // 紫
+      'rgba(110,185,255,0.8)', // 青
+      'rgba(220,110,170,0.75)', // 玫红
+      'rgba(245,240,230,0.85)', // 奶白
+    ];
+    const RING_STOPS = ['#ff82be', '#826eeb', '#5aafff']; // 圆环渐变端点：粉 → 紫 → 青
+    const MAX_PARTICLES = 90;
+
     const particles: {
       x: number;
       y: number;
@@ -67,70 +84,61 @@
       color: string;
     }[] = [];
 
+    // ── 光标状态 ──
     let mx = -100;
-    let my = -100;
-    let px = -100;
-    let py = -100;
+    let my = -100; // 鼠标即时位置
+    let rx = -100;
+    let ry = -100; // 圆环跟随位置（慢）
+    let dx = -100;
+    let dy = -100; // 中心点跟随位置（快）
+    let lx = -100;
+    let ly = -100; // 上一帧圆环位置（算速度）
+    let vx = 0;
+    let vy = 0; // 圆环速度（弹性变形依据）
     let hovering = false;
+    let inView = false;
+    let alpha = 0; // 整体淡入淡出
+    let ringScale = 1; // 悬停放大（平滑过渡）
+    let t = 0; // 帧计数（呼吸 / 渐变旋转）
 
     window.addEventListener('mousemove', (e) => {
       mx = e.clientX;
       my = e.clientY;
-      const t = e.target as Element | null;
+      inView = true;
+      const el = e.target as Element | null;
       hovering = Boolean(
-        t?.closest?.('a, button, input, textarea, select, [role="button"], summary')
+        el?.closest?.('a, button, input, textarea, select, [role="button"], summary')
       );
     });
     document.addEventListener('mouseleave', () => {
-      mx = -100;
-      my = -100;
+      inView = false;
+      hovering = false;
     });
 
     const spawn = () => {
       if (particles.length >= MAX_PARTICLES) particles.shift();
-      const color = COLORS[(Math.random() * COLORS.length) | 0];
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 0.4 + Math.random() * 0.9;
+      const color = P_COLORS[(Math.random() * P_COLORS.length) | 0];
+      const angle = Math.random() * TAU;
+      const speed = 0.5 + Math.random() * 1.2;
       particles.push({
         x: mx,
         y: my,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         life: 1,
-        decay: 0.018 + Math.random() * 0.018,
-        size: 2 + Math.random() * 3.5,
+        decay: 0.02 + Math.random() * 0.02,
+        size: 2.5 + Math.random() * 3.5,
         color,
       });
     };
 
     let raf = 0;
     const frame = () => {
+      t++;
       ctx.clearRect(0, 0, w, h);
+
+      // ── 粒子尾迹：lighter 叠加发光（先画，粒子间互相增亮形成光晕）──
       ctx.globalCompositeOperation = 'lighter';
-
-      const inView = mx >= 0 && my >= 0;
-      if (inView) {
-        // 半透明白色光点：核心 + 柔光晕；悬停可交互元素时放大
-        const r = hovering ? 26 : 15;
-        const glow = ctx.createRadialGradient(mx, my, 0, mx, my, r);
-        glow.addColorStop(0, 'rgba(255,255,255,0.55)');
-        glow.addColorStop(1, 'rgba(255,255,255,0)');
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(mx, my, r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,0.95)';
-        ctx.beginPath();
-        ctx.arc(mx, my, 2.2, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 只有移动时才产生粒子尾迹
-        if (Math.hypot(mx - px, my - py) > 1.5) spawn();
-        px = mx;
-        py = my;
-      }
-
-      // 粒子飘散衰减
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.x += p.vx;
@@ -141,13 +149,111 @@
           particles.splice(i, 1);
           continue;
         }
-        ctx.globalAlpha = Math.max(0, p.life);
-        ctx.fillStyle = p.color;
+        const pr = p.size * (0.4 + p.life * 0.6);
+        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, pr);
+        g.addColorStop(0, p.color);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.globalAlpha = Math.max(0, p.life) * 0.85 * alpha;
+        ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * (0.4 + p.life * 0.6), 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, pr, 0, TAU);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
+
+      // ── 状态更新 ──
+      alpha = lerp(alpha, inView ? 1 : 0, 0.08);
+      if (inView) {
+        const ringK = hovering ? 0.22 : 0.15;
+        rx = lerp(rx, mx, ringK);
+        ry = lerp(ry, my, ringK);
+        dx = lerp(dx, mx, 0.5);
+        dy = lerp(dy, my, 0.5);
+        // 移动才产生粒子
+        if (Math.hypot(mx - lx, my - ly) > 1.2) spawn();
+        lx = mx;
+        ly = my;
+      }
+
+      // ── 光标主体：圆环 + 中心光点（source-over，保证对比色正确）──
+      if (inView) {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = alpha;
+
+        // 速度平滑（弹性变形依据）
+        vx = lerp(vx, rx - lx, 0.4);
+        vy = lerp(vy, ry - ly, 0.4);
+        const speed = Math.hypot(vx, vy);
+        ringScale = lerp(ringScale, hovering ? 1.45 : 1, 0.12);
+
+        // 静止呼吸：轻微起伏赋予生命力
+        const breathe = 1 + Math.sin(t * 0.05) * 0.04;
+        const r = 11 * ringScale * breathe;
+
+        ctx.save();
+        ctx.translate(rx, ry);
+        // 移动时沿速度方向弹性拉伸（速度越快拉得越长）
+        if (speed > 0.5) {
+          const stretch = 1 + Math.min(speed / 14, 1) * 0.22;
+          ctx.rotate(Math.atan2(vy, vx));
+          ctx.scale(stretch, 2 - stretch);
+        }
+
+        // 深色对比轮廓：保证白色背景上清晰可见
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, TAU);
+        ctx.strokeStyle = 'rgba(18,18,26,0.30)';
+        ctx.lineWidth = 3.2;
+        ctx.stroke();
+
+        // 品牌色渐变描边（方向极缓旋转，微妙流动）
+        ctx.save();
+        ctx.rotate(t * 0.0006);
+        const g = ctx.createLinearGradient(-r, -r, r, r);
+        g.addColorStop(0, RING_STOPS[0]);
+        g.addColorStop(0.5, RING_STOPS[1]);
+        g.addColorStop(1, RING_STOPS[2]);
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, TAU);
+        ctx.strokeStyle = g;
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+        ctx.restore();
+
+        // 悬停柔光填充：粉→紫 低透明度径向渐变
+        if (hovering) {
+          const fg = ctx.createRadialGradient(0, 0, r * 0.15, 0, 0, r);
+          fg.addColorStop(0, 'rgba(255,130,190,0.20)');
+          fg.addColorStop(1, 'rgba(130,110,235,0.06)');
+          ctx.fillStyle = fg;
+          ctx.beginPath();
+          ctx.arc(0, 0, r, 0, TAU);
+          ctx.fill();
+        }
+        ctx.restore();
+
+        // 中心光点：深色微晕（白底可见） + 白色光晕 + 白色核心
+        const coreR = hovering ? 2.4 : 3.2;
+        ctx.beginPath();
+        ctx.arc(dx, dy, coreR + 1.6, 0, TAU);
+        ctx.fillStyle = 'rgba(18,18,26,0.28)';
+        ctx.fill();
+
+        const glow = ctx.createRadialGradient(dx, dy, 0, dx, dy, coreR * 3.2);
+        glow.addColorStop(0, 'rgba(255,255,255,0.5)');
+        glow.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(dx, dy, coreR * 3.2, 0, TAU);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(dx, dy, coreR, 0, TAU);
+        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctx.fill();
+
+        ctx.globalAlpha = 1;
+      }
 
       raf = requestAnimationFrame(frame);
     };
