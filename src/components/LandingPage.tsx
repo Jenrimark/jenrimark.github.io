@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
-import { Home, ArrowUpRight } from 'lucide-react';
+import { Home, ArrowUpRight, Heart } from 'lucide-react';
 import { profile } from '../data/profile';
 
 const VIDEO_URL =
   'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260602_150901_c45b90ec-18d7-42ff-90e2-b95d7109e330.mp4';
 
 const EMAIL = '2303532728@qq.com';
+
+const AFDIAN_URL = 'https://ifdian.net/a/jenrimark';
 
 /* ─── 导航菜单槽：图标态 ↔ 文字态 同位置渐变（由导航条 --p 进度驱动） ─── */
 
@@ -383,6 +385,16 @@ export default function LandingPage() {
                 <span className="text-sm font-medium text-gray-900">在线履历书 →</span>
               </a>
             </div>
+            <a
+              href={AFDIAN_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-6 py-4 text-white hover:opacity-95 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/30 transition-all"
+            >
+              <Heart size={20} strokeWidth={2.5} />
+              <span className="text-base font-semibold">爱发电 · 支持我的创作</span>
+              <ArrowUpRight size={18} strokeWidth={2.5} />
+            </a>
           </div>
         </section>
 
@@ -410,6 +422,10 @@ export default function LandingPage() {
             <span className="mx-2">·</span>
             <a href="mailto:2303532728@qq.com" className="hover:text-gray-600">
               2303532728@qq.com
+            </a>
+            <span className="mx-2">·</span>
+            <a href={AFDIAN_URL} target="_blank" rel="noopener noreferrer" className="hover:text-gray-600">
+              爱发电
             </a>
           </p>
         </footer>
