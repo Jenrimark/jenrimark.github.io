@@ -413,6 +413,15 @@ export default function LandingPage() {
               <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-gray-600">
                 蜀ICP备2026055157号
               </a>
+              <span className="mx-2">·</span>
+              <a
+                href="https://beian.mps.gov.cn/#/query/webSearch?code=鄂公网安备42018502009413号"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-gray-600"
+              >
+                鄂公网安备42018502009413号
+              </a>
             </span>
           </p>
           <p className="mt-1 text-sm text-gray-400">
