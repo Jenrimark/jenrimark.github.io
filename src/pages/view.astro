@@ -111,9 +111,9 @@ import { searchEngines } from '../data/view-search';
                 <p class="view-suggest__col-title">搜索</p>
                 <ul id="view-suggest-query" class="view-suggest__list" role="listbox" aria-label="搜索候选"></ul>
               </div>
-              <div class="view-suggest__col view-suggest__col--bookmarks">
-                <p class="view-suggest__col-title">书签</p>
-                <ul id="view-suggest-bookmarks" class="view-suggest__list" role="listbox" aria-label="书签"></ul>
+              <div class="view-suggest__col view-suggest__col--links">
+                <p class="view-suggest__col-title">快捷链接</p>
+                <ul id="view-suggest-bookmarks" class="view-suggest__list" role="listbox" aria-label="快捷链接"></ul>
               </div>
             </div>
           </div>
@@ -121,69 +121,68 @@ import { searchEngines } from '../data/view-search';
       </div>
     </section>
 
-    <aside class="view-ext-banner view-glass view-glass--panel" id="view-ext-banner" aria-label="扩展安装">
-      <div class="view-ext-banner__main">
-        <div class="view-ext-banner__text">
-          <strong>书签自动同步</strong>
-          <span>需安装 Chrome 扩展（仅读取本机书签，不上传服务器）</span>
-        </div>
-        <a
-          class="view-btn view-btn--accent"
-          href="/downloads/jenrimark-view-extension.zip?v=0.1.3"
-          download="jenrimark-view-extension.zip"
-        >
-          下载扩展 v0.1.3 (.zip)
-        </a>
-      </div>
-      <details class="view-ext-install">
-        <summary>安装步骤（换设备可重新下载）</summary>
-        <ol>
-          <li>
-            下载并解压 zip，打开 <code>manifest.json</code> 确认
-            <code>"version": "0.1.3"</code> 且含
-            <code>120.24.93.79:23332</code>（旧包无此 IP 则扩展无效）
-          </li>
-          <li>
-            若本站 zip 仍是旧版，改用
-            <a
-              href="https://github.com/Jenrimark/Jenrimark/raw/main/public/downloads/jenrimark-view-extension.zip"
-              target="_blank"
-              rel="noopener noreferrer"
-            >GitHub 直链</a>（约 3.2 KB，manifest 约 1 KB）
-          </li>
-          <li>Chrome 打开 <code>chrome://extensions</code>，开启「开发者模式」</li>
-          <li>先移除旧扩展，再「加载已解压的扩展程序」选解压后的文件夹</li>
-          <li>刷新本页，状态应变为「已连接浏览器扩展」</li>
-        </ol>
-      </details>
-    </aside>
-
-    <section class="view-bookmarks-area" aria-label="书签">
+    <section class="view-bookmarks-area" aria-label="快捷链接">
       <div class="view-toolbar">
         <div>
-          <h2>书签</h2>
+          <h2>快捷链接</h2>
           <p id="view-status" class="view-status">加载中…</p>
         </div>
         <div class="view-toolbar-actions">
-          <button type="button" id="view-folder-toggle" class="view-btn view-glass view-glass--soft view-glass--pill" aria-expanded="false">
-            文件夹筛选
+          <button type="button" id="view-link-add" class="view-btn view-glass view-glass--soft view-glass--pill" aria-expanded="false" aria-controls="view-links-panel">
+            添加快捷链接
           </button>
         </div>
       </div>
 
-      <div id="view-folder-panel" class="view-folder-panel view-glass view-glass--panel">
-        <p class="view-folder-panel__hint">
-          点选要显示的文件夹；全选显示全部，全不选不显示书签。筛选偏好会保存在本机。
-        </p>
-        <div class="view-folder-panel__actions">
-          <button type="button" id="view-folder-select-all" class="view-folder-action">全选</button>
-          <button type="button" id="view-folder-clear" class="view-folder-action">全不选</button>
-        </div>
-        <div id="view-folder-list" class="view-folder-list" role="group" aria-label="文件夹"></div>
+      <div id="view-links-panel" class="view-links-panel view-glass view-glass--panel" hidden>
+        <form id="view-link-form" class="view-link-form" novalidate>
+          <div class="view-link-form__row">
+            <label class="view-link-form__label" for="view-link-title">标题</label>
+            <input
+              id="view-link-title"
+              class="view-link-form__input"
+              type="text"
+              placeholder="可选，留空则用网站域名"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+          <div class="view-link-form__row">
+            <label class="view-link-form__label" for="view-link-url">网址</label>
+            <input
+              id="view-link-url"
+              class="view-link-form__input"
+              type="text"
+              placeholder="https://example.com"
+              autocomplete="off"
+              spellcheck="false"
+              inputmode="url"
+            />
+          </div>
+          <div class="view-link-form__row">
+            <span class="view-link-form__label" id="view-link-icon-label">图标</span>
+            <div class="view-link-iconbox">
+              <span class="view-link-iconbox__preview" aria-hidden="true">
+                <img id="view-link-icon-preview" alt="" width="32" height="32" hidden />
+              </span>
+              <span class="view-link-iconbox__text" id="view-link-icon-text">自动捕捉网站图标</span>
+              <span class="view-link-iconbox__actions">
+                <button type="button" id="view-link-icon-upload" class="view-link-action">上传图片</button>
+                <button type="button" id="view-link-icon-reset" class="view-link-action" hidden>恢复自动</button>
+              </span>
+            </div>
+            <input id="view-link-icon-file" type="file" accept="image/*" hidden />
+          </div>
+          <p id="view-link-error" class="view-link-form__error" role="alert" hidden></p>
+          <div class="view-link-form__actions">
+            <button type="submit" class="view-btn view-btn--accent">添加</button>
+            <button type="button" id="view-link-cancel" class="view-btn">取消</button>
+          </div>
+        </form>
       </div>
 
       <div id="view-bookmarks" class="view-bookmarks">
-        <p class="view-empty view-glass view-glass--soft view-glass--card view-glass--dashed">正在加载书签…</p>
+        <p class="view-empty view-glass view-glass--soft view-glass--card view-glass--dashed">加载中…</p>
       </div>
     </section>
   </div>

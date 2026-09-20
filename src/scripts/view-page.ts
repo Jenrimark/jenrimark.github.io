@@ -2,30 +2,14 @@ import {
   searchEngines,
   defaultSearchEngineId,
   STORAGE_ENGINE,
-  STORAGE_FOLDERS,
   type SearchEngineId,
 } from '../data/view-search';
-import { sampleBookmarkTree, type ViewBookmarkNode } from '../data/view-bookmarks.sample';
+import { MAX_ICON_SIZE, type ViewLink } from '../data/view-links';
 import { faviconSrcForRender, hydrateFaviconImages, initFaviconRetryOnVisible } from './favicon-cache';
 import { initSearchAutocomplete, saveRecentQuery } from './view-autocomplete';
-import { updateBookmarks } from './view-bookmarks-state';
+import { getLinks, addLink, removeLink } from './view-links-state';
 import { initViewBackground } from './view-background';
 import { initViewTheme } from './view-theme';
-
-const MSG_SOURCE_PAGE = 'jenrimark-view';
-const MSG_SOURCE_EXT = 'jenrimark-view-ext';
-
-interface BookmarkLink {
-  id: string;
-  title: string;
-  url: string;
-}
-
-interface BookmarkSection {
-  folderId: string;
-  folderTitle: string;
-  links: BookmarkLink[];
-}
 
 function getEngine(id: SearchEngineId) {
   return searchEngines.find((e) => e.id === id) ?? searchEngines[0];
@@ -39,101 +23,6 @@ function loadEngineId(): SearchEngineId {
   return defaultSearchEngineId;
 }
 
-/** `null` = 从未保存过，默认全选；`Set` 为空 = 用户点了全不选 */
-function loadFolderFilter(): Set<string> | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_FOLDERS);
-    if (raw === null) return null;
-    const ids = JSON.parse(raw) as string[];
-    return new Set(Array.isArray(ids) ? ids : []);
-  } catch {
-    return null;
-  }
-}
-
-function resolveFolderFilter(filter: Set<string> | null, folderIds: string[]): Set<string> {
-  if (filter === null) return new Set(folderIds);
-  return pruneFolderFilter(filter, folderIds);
-}
-
-function saveFolderFilter(ids: Set<string>) {
-  localStorage.setItem(STORAGE_FOLDERS, JSON.stringify([...ids]));
-}
-
-/** 去掉已不存在的文件夹 id，避免换设备/同步后筛选失效 */
-function pruneFolderFilter(filter: Set<string>, folderIds: string[]): Set<string> {
-  if (filter.size === 0) return filter;
-  const valid = new Set(folderIds);
-  const next = new Set<string>();
-  for (const id of filter) {
-    if (valid.has(id)) next.add(id);
-  }
-  return next;
-}
-
-function isFolderNode(node: ViewBookmarkNode): boolean {
-  return Boolean(node.children?.length) && !node.url;
-}
-
-function collectFolders(nodes: ViewBookmarkNode[], path: string[] = []): { id: string; label: string }[] {
-  const out: { id: string; label: string }[] = [];
-  for (const node of nodes) {
-    if (!isFolderNode(node)) continue;
-    const label = [...path, node.title].join(' / ');
-    out.push({ id: node.id, label });
-    if (node.children) {
-      out.push(...collectFolders(node.children, [...path, node.title]));
-    }
-  }
-  return out;
-}
-
-function folderSelected(folderId: string, filter: Set<string>): boolean {
-  return filter.has(folderId);
-}
-
-function extractSections(
-  nodes: ViewBookmarkNode[],
-  filter: Set<string>,
-  parentPath: string[] = [],
-): BookmarkSection[] {
-  const sections: BookmarkSection[] = [];
-
-  for (const node of nodes) {
-    if (node.url) continue;
-
-    if (isFolderNode(node)) {
-      const links: BookmarkLink[] = [];
-      const walk = (children: ViewBookmarkNode[]) => {
-        for (const child of children) {
-          if (child.url) {
-            links.push({ id: child.id, title: child.title, url: child.url });
-          } else if (child.children) {
-            walk(child.children);
-          }
-        }
-      };
-
-      if (folderSelected(node.id, filter) && node.children) {
-        walk(node.children);
-        if (links.length > 0) {
-          sections.push({
-            folderId: node.id,
-            folderTitle: [...parentPath, node.title].join(' / '),
-            links,
-          });
-        }
-      }
-
-      if (node.children) {
-        sections.push(...extractSections(node.children, filter, [...parentPath, node.title]));
-      }
-    }
-  }
-
-  return sections;
-}
-
 function updateClock(el: HTMLElement) {
   const now = new Date();
   const date = now.toLocaleDateString('zh-CN', {
@@ -143,47 +32,6 @@ function updateClock(el: HTMLElement) {
   });
   const time = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
   el.textContent = `${date} · ${time}`;
-}
-
-function renderBookmarks(sections: BookmarkSection[], container: HTMLElement, noneSelected: boolean) {
-  if (sections.length === 0) {
-    container.innerHTML = noneSelected
-      ? ''
-      : '<p class="view-empty view-glass view-glass--soft view-glass--card view-glass--dashed">没有匹配的书签。试试调整文件夹筛选，或安装扩展同步浏览器书签。</p>';
-    return;
-  }
-
-  container.innerHTML = sections
-    .map(
-      (section) => `
-    <section class="view-bookmark-section" data-folder-id="${section.folderId}">
-      <h3 class="view-bookmark-section__title">${escapeHtml(section.folderTitle)}</h3>
-      <div class="view-bookmark-grid">
-        ${section.links
-          .map(
-            (link) => `
-          <a class="view-bookmark-card view-glass view-glass--soft view-glass--card" href="${escapeAttr(link.url)}" target="_blank" rel="noopener noreferrer">
-            <img src="${escapeAttr(faviconSrcForRender(link.url))}" data-favicon data-favicon-state="pending" alt="" width="20" height="20" decoding="async" referrerpolicy="no-referrer" />
-            <span>${escapeHtml(link.title)}</span>
-          </a>
-        `,
-          )
-          .join('')}
-      </div>
-    </section>
-  `,
-    )
-    .join('');
-
-  hydrateFaviconImages(container);
-}
-
-let faviconRetryBound = false;
-
-function bindFaviconRetry(container: HTMLElement) {
-  if (faviconRetryBound) return;
-  faviconRetryBound = true;
-  initFaviconRetryOnVisible(container);
 }
 
 function escapeHtml(s: string): string {
@@ -196,6 +44,22 @@ function escapeHtml(s: string): string {
 
 function escapeAttr(s: string): string {
   return escapeHtml(s).replace(/'/g, '&#39;');
+}
+
+/** 补全协议并校验，仅接受 http/https；无效返回 null */
+function normalizeUrl(raw: string): string | null {
+  const value = raw.trim();
+  if (!value) return null;
+  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value)) {
+    return normalizeUrl(`https://${value}`);
+  }
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    return url.href;
+  } catch {
+    return null;
+  }
 }
 
 function initSearch() {
@@ -289,132 +153,216 @@ function initClock() {
   setInterval(() => updateClock(el), 30_000);
 }
 
-function initBookmarks() {
-  const container = document.getElementById('view-bookmarks');
-  const folderPanel = document.getElementById('view-folder-panel');
-  const folderList = document.getElementById('view-folder-list');
-  const folderToggle = document.getElementById('view-folder-toggle');
-  const folderSelectAll = document.getElementById('view-folder-select-all');
-  const folderClear = document.getElementById('view-folder-clear');
-  const statusEl = document.getElementById('view-status');
-  if (!container || !folderPanel || !folderList) return;
-
-  let tree: ViewBookmarkNode[] = sampleBookmarkTree;
-  let filter: Set<string> | null = loadFolderFilter();
-  let fromExtension = false;
-
-  const refresh = () => {
-    const folders = collectFolders(tree);
-    const folderIds = folders.map((f) => f.id);
-    const activeFilter = resolveFolderFilter(filter, folderIds);
-    renderFolderList(folderList, folders, activeFilter);
-    const sections = extractSections(tree, activeFilter);
-    const noneSelected = filter !== null && activeFilter.size === 0;
-    renderBookmarks(sections, container, noneSelected);
-    bindFaviconRetry(container);
-    updateBookmarks(tree, activeFilter);
-  };
-
-  const toggleFolder = (folderId: string) => {
-    const folderIds = collectFolders(tree).map((f) => f.id);
-    if (folderIds.length === 0) return;
-
-    const active = resolveFolderFilter(filter, folderIds);
-    const next = new Set(active);
-    if (next.has(folderId)) {
-      next.delete(folderId);
-    } else {
-      next.add(folderId);
-    }
-    filter = next;
-    saveFolderFilter(filter);
-    refresh();
-  };
-
-  folderList.addEventListener('click', (e) => {
-    const chip = (e.target as Element).closest<HTMLButtonElement>('.view-folder-chip');
-    const folderId = chip?.dataset.folderId;
-    if (!folderId) return;
-    toggleFolder(folderId);
-  });
-
-  const extBanner = document.getElementById('view-ext-banner');
-
-  const setStatus = (live: boolean) => {
-    if (!statusEl) return;
-    if (live) {
-      statusEl.textContent = '已连接浏览器扩展 · 显示真实书签';
-      statusEl.classList.add('view-status--live');
-      extBanner?.classList.add('is-connected');
-    } else {
-      statusEl.textContent = '示例书签 · 安装扩展后将自动同步浏览器书签';
-      statusEl.classList.remove('view-status--live');
-      extBanner?.classList.remove('is-connected');
-    }
-  };
-
-  folderToggle?.addEventListener('click', () => {
-    const open = folderPanel.classList.toggle('is-open');
-    folderToggle.setAttribute('aria-expanded', String(open));
-  });
-
-  folderSelectAll?.addEventListener('click', () => {
-    const folderIds = collectFolders(tree).map((f) => f.id);
-    filter = new Set(folderIds);
-    saveFolderFilter(filter);
-    refresh();
-  });
-
-  folderClear?.addEventListener('click', () => {
-    filter = new Set();
-    saveFolderFilter(filter);
-    refresh();
-  });
-
-  window.addEventListener('message', (event) => {
-    const data = event.data;
-    if (!data || data.source !== MSG_SOURCE_EXT) return;
-    if (data.type === 'BOOKMARKS' && Array.isArray(data.tree)) {
-      tree = data.tree as ViewBookmarkNode[];
-      fromExtension = true;
-      setStatus(true);
-      refresh();
-    }
-  });
-
-  window.postMessage({ source: MSG_SOURCE_PAGE, type: 'REQUEST_BOOKMARKS' }, '*');
-  setStatus(fromExtension);
-  refresh();
-
-  // 扩展未响应时保持示例数据
-  setTimeout(() => {
-    if (!fromExtension) setStatus(false);
-  }, 800);
-}
-
-function renderFolderList(
-  el: HTMLElement,
-  folders: { id: string; label: string }[],
-  filter: Set<string>,
-) {
-  if (folders.length === 0) {
-    el.innerHTML = '<p class="view-folder-panel__empty">暂无文件夹</p>';
+function renderLinks(container: HTMLElement, links: ViewLink[]) {
+  if (links.length === 0) {
+    container.innerHTML =
+      '<p class="view-empty view-glass view-glass--soft view-glass--card view-glass--dashed">还没有快捷链接 · 点右上角「添加快捷链接」开始 DIY</p>';
     return;
   }
 
-  el.innerHTML = folders
-    .map((f) => {
-      const pressed = filter.has(f.id);
-      return `
-    <button
-      type="button"
-      class="view-folder-chip"
-      data-folder-id="${escapeAttr(f.id)}"
-      aria-pressed="${pressed ? 'true' : 'false'}"
-    >${escapeHtml(f.label)}</button>
-  `;
-    })
-    .join('');
+  container.innerHTML = `<div class="view-link-grid">
+    ${links
+      .map((link) => {
+        const customIcon = Boolean(link.icon);
+        const iconSrc = link.icon ?? faviconSrcForRender(link.url);
+        const faviconAttrs = customIcon ? '' : ' data-favicon data-favicon-state="pending"';
+        return `
+      <div class="view-link-card view-glass view-glass--soft view-glass--card">
+        <a class="view-link-card__link" href="${escapeAttr(link.url)}" target="_blank" rel="noopener noreferrer">
+          <img src="${escapeAttr(iconSrc)}"${faviconAttrs} alt="" width="20" height="20" decoding="async" referrerpolicy="no-referrer" />
+          <span>${escapeHtml(link.title)}</span>
+        </a>
+        <button type="button" class="view-link-card__remove" data-remove-id="${escapeAttr(link.id)}" aria-label="删除 ${escapeAttr(link.title)}" title="删除">×</button>
+      </div>`;
+      })
+      .join('')}
+  </div>`;
+
+  hydrateFaviconImages(container);
+}
+
+let faviconRetryBound = false;
+
+function bindFaviconRetry(container: HTMLElement) {
+  if (faviconRetryBound) return;
+  faviconRetryBound = true;
+  initFaviconRetryOnVisible(container);
+}
+
+function initLinks() {
+  const container = document.getElementById('view-bookmarks');
+  const statusEl = document.getElementById('view-status');
+  const addBtn = document.getElementById('view-link-add');
+  const panel = document.getElementById('view-links-panel');
+  const form = document.getElementById('view-link-form') as HTMLFormElement | null;
+  const titleInput = document.getElementById('view-link-title') as HTMLInputElement | null;
+  const urlInput = document.getElementById('view-link-url') as HTMLInputElement | null;
+  const errorEl = document.getElementById('view-link-error');
+  const iconPreview = document.getElementById('view-link-icon-preview') as HTMLImageElement | null;
+  const iconText = document.getElementById('view-link-icon-text');
+  const iconUpload = document.getElementById('view-link-icon-upload') as HTMLButtonElement | null;
+  const iconReset = document.getElementById('view-link-icon-reset') as HTMLButtonElement | null;
+  const iconFile = document.getElementById('view-link-icon-file') as HTMLInputElement | null;
+  const cancelBtn = document.getElementById('view-link-cancel');
+  if (!container || !addBtn || !panel || !form || !urlInput || !errorEl) return;
+
+  let pendingIcon: string | null = null;
+
+  const refresh = () => {
+    renderLinks(container, getLinks());
+    bindFaviconRetry(container);
+    if (statusEl) {
+      const n = getLinks().length;
+      statusEl.textContent = n === 0 ? '还没有快捷链接' : `共 ${n} 个快捷链接 · 保存在本机`;
+    }
+  };
+
+  const previewAutoIcon = () => {
+    if (!iconPreview || !iconText) return;
+    const normalized = normalizeUrl(urlInput.value);
+    if (!normalized) {
+      previewIcon();
+      return;
+    }
+    iconPreview.src = faviconSrcForRender(normalized);
+    iconPreview.hidden = false;
+    iconPreview.onerror = () => {
+      iconPreview.hidden = true;
+      iconPreview.onerror = null;
+    };
+    iconText.textContent = `自动捕捉：${new URL(normalized).hostname}`;
+  };
+
+  const previewIcon = () => {
+    if (!iconPreview || !iconText) return;
+    if (pendingIcon) {
+      iconPreview.src = pendingIcon;
+      iconPreview.hidden = false;
+      iconPreview.onerror = null;
+      iconText.textContent = '已使用上传的自定义图标';
+      if (iconReset) iconReset.hidden = false;
+      return;
+    }
+    iconPreview.hidden = true;
+    iconPreview.removeAttribute('src');
+    iconPreview.onerror = null;
+    iconText.textContent = '自动捕捉网站图标';
+    if (iconReset) iconReset.hidden = true;
+  };
+
+  const resetForm = () => {
+    if (titleInput) titleInput.value = '';
+    if (urlInput) urlInput.value = '';
+    errorEl.hidden = true;
+    pendingIcon = null;
+    previewIcon();
+  };
+
+  const open = () => {
+    panel.hidden = false;
+    addBtn.setAttribute('aria-expanded', 'true');
+    titleInput?.focus();
+  };
+
+  const close = () => {
+    panel.hidden = true;
+    addBtn.setAttribute('aria-expanded', 'false');
+  };
+
+  addBtn.addEventListener('click', () => {
+    if (panel.hidden) {
+      resetForm();
+      open();
+    } else {
+      close();
+    }
+  });
+
+  cancelBtn?.addEventListener('click', () => {
+    resetForm();
+    close();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (panel.hidden) return;
+    const target = e.target as Node;
+    if (!panel.contains(target) && !addBtn.contains(target)) close();
+  });
+
+  urlInput.addEventListener('input', () => {
+    errorEl.hidden = true;
+    if (pendingIcon) return;
+    previewAutoIcon();
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const url = normalizeUrl(urlInput.value);
+    if (!url) {
+      errorEl.textContent = '网址无效，请检查（支持 http/https，可省略协议）。';
+      errorEl.hidden = false;
+      urlInput.focus();
+      return;
+    }
+    let title = titleInput?.value.trim() ?? '';
+    if (!title) {
+      try {
+        title = new URL(url).hostname;
+      } catch {
+        title = url;
+      }
+    }
+    addLink({ title, url, icon: pendingIcon ?? undefined });
+    resetForm();
+    close();
+    refresh();
+  });
+
+  iconUpload?.addEventListener('click', () => iconFile?.click());
+
+  iconFile?.addEventListener('change', () => {
+    const file = iconFile.files?.[0];
+    iconFile.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      errorEl.textContent = '请选择图片文件。';
+      errorEl.hidden = false;
+      return;
+    }
+    if (file.size > MAX_ICON_SIZE) {
+      errorEl.textContent = '图标请小于 1MB。';
+      errorEl.hidden = false;
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      pendingIcon = reader.result as string;
+      errorEl.hidden = true;
+      previewIcon();
+    };
+    reader.onerror = () => {
+      errorEl.textContent = '读取图片失败，请换一张试试。';
+      errorEl.hidden = false;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  iconReset?.addEventListener('click', () => {
+    pendingIcon = null;
+    errorEl.hidden = true;
+    previewAutoIcon();
+  });
+
+  container.addEventListener('click', (e) => {
+    const btn = (e.target as Element).closest<HTMLButtonElement>('.view-link-card__remove');
+    if (!btn) return;
+    const id = btn.dataset.removeId;
+    if (!id) return;
+    removeLink(id);
+    refresh();
+  });
+
+  refresh();
 }
 
 function initKeyboard() {
@@ -430,7 +378,7 @@ export function initViewPage() {
   initViewTheme();
   initClock();
   initSearch();
-  initBookmarks();
+  initLinks();
   initKeyboard();
   initViewBackground();
 }

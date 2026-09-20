@@ -1,8 +1,7 @@
-/** 双列联想：左列搜索候选，右列书签筛选 */
+/** 双列联想：左列搜索候选，右列快捷链接筛选 */
 
 import { faviconSrcForRender, hydrateFaviconImages } from './favicon-cache';
-import { getBookmarkTree, onBookmarksChange } from './view-bookmarks-state';
-import { flattenAllBookmarks, searchBookmarks, type FlatBookmark } from './view-bookmark-search';
+import { searchLinks, onLinksChange, type FlatLink } from './view-links-state';
 
 const STORAGE_RECENT = 'view:search-recent';
 const MAX_RECENT = 8;
@@ -101,7 +100,7 @@ function mergeQuerySuggestions(recent: string[], google: string[]): QueryItem[] 
 
 type ActiveTarget =
   | { col: 'query'; index: number }
-  | { col: 'bookmark'; index: number }
+  | { col: 'link'; index: number }
   | null;
 
 export function initSearchAutocomplete({
@@ -114,7 +113,7 @@ export function initSearchAutocomplete({
   dismissRoots = [],
 }: InitOptions) {
   let queryItems: QueryItem[] = [];
-  let bookmarkItems: FlatBookmark[] = [];
+  let linkItems: FlatLink[] = [];
   let active: ActiveTarget = null;
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
   let requestId = 0;
@@ -125,7 +124,7 @@ export function initSearchAutocomplete({
     queryList.innerHTML = '';
     bookmarkList.innerHTML = '';
     queryItems = [];
-    bookmarkItems = [];
+    linkItems = [];
     active = null;
     input.setAttribute('aria-expanded', 'false');
   };
@@ -142,7 +141,7 @@ export function initSearchAutocomplete({
     onSubmit(item.text);
   };
 
-  const pickBookmark = (item: FlatBookmark | undefined) => {
+  const pickLink = (item: FlatLink | undefined) => {
     if (!item) return;
     hide();
     window.open(item.url, '_blank', 'noopener,noreferrer');
@@ -157,11 +156,11 @@ export function initSearchAutocomplete({
     });
   };
 
-  const bindBookmarkItems = () => {
-    bookmarkList.querySelectorAll<HTMLLIElement>('.view-suggest__item--bookmark').forEach((el) => {
+  const bindLinkItems = () => {
+    bookmarkList.querySelectorAll<HTMLLIElement>('.view-suggest__item--link').forEach((el) => {
       el.addEventListener('mousedown', (e) => {
         e.preventDefault();
-        pickBookmark(bookmarkItems[Number(el.dataset.index)]);
+        pickLink(linkItems[Number(el.dataset.index)]);
       });
     });
     hydrateFaviconImages(bookmarkList);
@@ -174,9 +173,9 @@ export function initSearchAutocomplete({
       el.classList.toggle('is-active', on);
       el.setAttribute('aria-selected', String(on));
     });
-    bookmarkList.querySelectorAll<HTMLLIElement>('.view-suggest__item--bookmark').forEach((el) => {
+    bookmarkList.querySelectorAll<HTMLLIElement>('.view-suggest__item--link').forEach((el) => {
       const i = Number(el.dataset.index);
-      const on = active?.col === 'bookmark' && active.index === i;
+      const on = active?.col === 'link' && active.index === i;
       el.classList.toggle('is-active', on);
       el.setAttribute('aria-selected', String(on));
     });
@@ -184,14 +183,14 @@ export function initSearchAutocomplete({
     const activeEl =
       active?.col === 'query'
         ? queryList.querySelector<HTMLElement>(`[data-index="${active.index}"]`)
-        : active?.col === 'bookmark'
+        : active?.col === 'link'
           ? bookmarkList.querySelector<HTMLElement>(`[data-index="${active.index}"]`)
           : null;
     activeEl?.scrollIntoView({ block: 'nearest' });
   };
 
   const render = () => {
-    if (queryItems.length === 0 && bookmarkItems.length === 0) {
+    if (queryItems.length === 0 && linkItems.length === 0) {
       hide();
       return;
     }
@@ -207,15 +206,14 @@ export function initSearchAutocomplete({
             .join('');
 
     bookmarkList.innerHTML =
-      bookmarkItems.length === 0
-        ? '<li class="view-suggest__empty">无匹配书签</li>'
-        : bookmarkItems
+      linkItems.length === 0
+        ? '<li class="view-suggest__empty">无匹配快捷链接</li>'
+        : linkItems
             .map(
-              (item, i) => `<li class="view-suggest__item view-suggest__item--bookmark" role="option" data-index="${i}">
+              (item, i) => `<li class="view-suggest__item view-suggest__item--link" role="option" data-index="${i}">
           <img src="${escapeAttr(faviconSrcForRender(item.url))}" data-favicon data-favicon-state="pending" alt="" width="18" height="18" decoding="async" referrerpolicy="no-referrer" />
           <span class="view-suggest__bookmark-text">
             <span class="view-suggest__bookmark-title">${escapeHtml(item.title)}</span>
-            ${item.folderPath ? `<span class="view-suggest__bookmark-path">${escapeHtml(item.folderPath)}</span>` : ''}
           </span>
         </li>`,
             )
@@ -223,7 +221,7 @@ export function initSearchAutocomplete({
 
     show();
     bindQueryItems();
-    bindBookmarkItems();
+    bindLinkItems();
     highlight();
   };
 
@@ -237,15 +235,13 @@ export function initSearchAutocomplete({
     if (id !== requestId) return;
 
     queryItems = mergeQuerySuggestions(recent, google);
-
-    const flat = flattenAllBookmarks(getBookmarkTree());
-    bookmarkItems = searchBookmarks(flat, query);
+    linkItems = searchLinks(query);
 
     active = null;
     render();
   };
 
-  onBookmarksChange(() => {
+  onLinksChange(() => {
     if (!panel.hidden) void update();
   });
 
@@ -264,20 +260,20 @@ export function initSearchAutocomplete({
     void update();
   });
 
-  const colLength = (col: 'query' | 'bookmark') => (col === 'query' ? queryItems.length : bookmarkItems.length);
+  const colLength = (col: 'query' | 'link') => (col === 'query' ? queryItems.length : linkItems.length);
 
   input.addEventListener('keydown', (e) => {
     if (panel.hidden) return;
 
     const hasQuery = queryItems.length > 0;
-    const hasBookmark = bookmarkItems.length > 0;
-    if (!hasQuery && !hasBookmark) return;
+    const hasLink = linkItems.length > 0;
+    if (!hasQuery && !hasLink) return;
 
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-      if (!hasQuery || !hasBookmark) return;
+      if (!hasQuery || !hasLink) return;
       e.preventDefault();
       if (e.key === 'ArrowRight') {
-        active = hasBookmark ? { col: 'bookmark', index: active?.col === 'bookmark' ? active.index : 0 } : active;
+        active = hasLink ? { col: 'link', index: active?.col === 'link' ? active.index : 0 } : active;
       } else {
         active = hasQuery ? { col: 'query', index: active?.col === 'query' ? active.index : 0 } : active;
       }
@@ -286,7 +282,7 @@ export function initSearchAutocomplete({
     }
 
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      const col = active?.col ?? (hasQuery ? 'query' : 'bookmark');
+      const col = active?.col ?? (hasQuery ? 'query' : 'link');
       const len = colLength(col);
       if (len === 0) return;
       e.preventDefault();
@@ -304,7 +300,7 @@ export function initSearchAutocomplete({
     if (e.key === 'Enter' && active) {
       e.preventDefault();
       if (active.col === 'query') pickQuery(queryItems[active.index]);
-      else pickBookmark(bookmarkItems[active.index]);
+      else pickLink(linkItems[active.index]);
       return;
     }
 

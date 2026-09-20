@@ -229,7 +229,7 @@ function loadFaviconForCard(card: HTMLAnchorElement, options: { skipCache?: bool
 }
 
 function retryFailedFavicons(container: HTMLElement) {
-  container.querySelectorAll<HTMLAnchorElement>('a.view-bookmark-card').forEach((card) => {
+  container.querySelectorAll<HTMLAnchorElement>('a.view-link-card__link').forEach((card) => {
     const img = card.querySelector<HTMLImageElement>('img[data-favicon]');
     if (!img || img.dataset.faviconState !== 'failed') return;
     loadFaviconForCard(card, { skipCache: true });
@@ -240,7 +240,7 @@ function retryFailedFavicons(container: HTMLElement) {
 export function hydrateFaviconImages(container: HTMLElement) {
   clearRetryTimers();
 
-  const cards = [...container.querySelectorAll<HTMLAnchorElement>('a.view-bookmark-card')];
+  const cards = [...container.querySelectorAll<HTMLAnchorElement>('a.view-link-card__link')];
   cards.forEach((card, index) => {
     const pageUrl = card.href;
     const hasCache = Boolean(getCachedFavicon(pageUrl));
