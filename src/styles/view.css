@@ -265,13 +265,131 @@ html[data-view-theme='dark'] .view-glass--interactive:hover {
 }
 
 .view-page {
-  width: min(100% - 2.5rem, 920px);
+  width: 80vw;
+  max-width: 1200px;
   margin-inline: auto;
-  padding: clamp(2.5rem, 8vh, 5rem) 0 3rem;
-  min-height: 100dvh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 0.75rem;
+  padding: 1rem 0;
+  overflow: hidden;
+}
+
+/* 主体拼图网格：12列 × 6行，大小完全由 grid 决定 */
+.view-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+/* 所有 tile 基础约束：大小由 grid 严格控制，内部不影响外部 */
+.view-tile {
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 各个 tile 占格定义（大小固定，和内部内容无关） */
+.view-tile--clock {
+  grid-column: 1 / span 6;
+  grid-row: 1 / span 2;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  text-align: center;
+  padding: 1.5rem 0.5rem 0.5rem;
+}
+
+.view-clock-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  line-height: 1.1;
+  width: 70%;
+  min-width: 220px;
+}
+
+.view-tile--search {
+  grid-column: 7 / span 6;
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.view-tile--links {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+}
+
+.view-tile--todo {
+  grid-column: 1 / span 4;
+  grid-row: 4 / span 3;
+  overflow-y: auto;
+  padding: 1.25rem 1.4rem;
+  border-radius: 22px;
+}
+
+.view-tile--countdown {
+  grid-column: 5 / span 4;
+  grid-row: 4 / span 3;
+  overflow-y: auto;
+  padding: 1.25rem 1.4rem;
+  border-radius: 22px;
+}
+
+.view-tile--weather {
+  grid-column: 9 / span 4;
+  grid-row: 4 / span 3;
+  overflow-y: auto;
+  padding: 1.25rem 1.4rem;
+  border-radius: 22px;
+}
+
+/* 编辑模式下的拖拽样式 */
+.view-grid.editing .view-tile {
+  cursor: grab;
+  outline: 2px dashed rgba(255,255,255,0.35);
+  outline-offset: -2px;
+  position: relative;
+}
+.view-grid.editing .view-tile:active { cursor: grabbing; }
+.view-grid.editing .view-tile.dragging { opacity: 0.5; }
+
+/* 组件删除按钮 */
+.view-tile-remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #ff3b30;
+  color: white;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: none;
+  place-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  z-index: 10;
+}
+.view-tile-remove:hover {
+  background: #ff453a;
+  transform: scale(1.1);
 }
 
 .view-topbar {
@@ -296,7 +414,7 @@ html[data-view-theme='dark'] .view-glass--interactive:hover {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.25rem 0.35rem 0.25rem 0.65rem;
+  padding: 0;
 }
 
 .view-theme-toggle {
@@ -472,13 +590,14 @@ html[data-view-theme='dark'] .view-greeting {
 
 .view-search-box {
   width: 100%;
+  position: relative;
 }
 
 .view-search-form {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.65rem 0.65rem 0.65rem 1.1rem;
+  padding: 0.5rem 0.65rem 0.5rem 1.1rem;
   cursor: text;
 }
 
@@ -598,14 +717,11 @@ html[data-view-theme='dark'] .view-search-form.view-glass::before {
 }
 
 .view-suggest {
-  position: absolute;
-  z-index: 1;
-  top: calc(100% + 0.45rem);
-  left: 0;
-  right: 0;
+  position: fixed;
+  z-index: 1000;
+  min-width: min(100%, 32rem);
   margin: 0;
   padding: 0.5rem;
-  min-width: min(100%, 32rem);
 }
 
 .view-suggest__cols {
@@ -1064,5 +1180,532 @@ html[data-view-theme='dark'] .view-btn--accent {
 @media (prefers-reduced-motion: reduce) {
   .view-search-form.view-glass::before {
     filter: none;
+  }
+}
+
+/* ────────────────────────────────────────────────
+   新版：大时钟 hero
+   ──────────────────────────────────────────────── */
+.view-big-clock {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(4.5rem, 7vw, 6rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.2);
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-view-theme='dark'] .view-big-clock {
+  text-shadow: 0 2px 32px rgba(0, 0, 0, 0.4);
+}
+
+.view-big-date {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--view-text-muted);
+}
+
+.view-tile--clock .view-greeting {
+  margin: 3px 0 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+
+/* ────────────────────────────────────────────────
+   每日一句
+   ──────────────────────────────────────────────── */
+.view-quote {
+  text-align: center;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 0.92rem;
+  color: var(--view-text-muted);
+  margin: 1.25rem auto 0;
+  max-width: 560px;
+  padding: 0 1rem;
+}
+
+/* ────────────────────────────────────────────────
+   图标网格：每个链接一个 tile，一行排列
+   ──────────────────────────────────────────────── */
+.view-icon-grid {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  align-items: center;
+  overflow-x: auto;
+  scrollbar-width: none;
+  width: 100%;
+  padding: 0 0.25rem;
+}
+.view-icon-grid::-webkit-scrollbar { display: none; }
+
+.view-icon-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  min-width: 64px;
+}
+
+.view-icon-tile__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: var(--view-glass-bg);
+  border: 0.5px solid var(--view-glass-border);
+  backdrop-filter: blur(var(--view-blur-soft)) saturate(var(--view-saturate));
+  -webkit-backdrop-filter: blur(var(--view-blur-soft)) saturate(var(--view-saturate));
+  transition: transform 0.15s ease, background 0.15s ease;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+.view-icon-tile:hover .view-icon-tile__icon {
+  transform: translateY(-3px) scale(1.05);
+  background: var(--view-glass-hover);
+}
+
+/* 快捷链接栏的加号按钮 */
+.view-icon-grid__add {
+  flex-shrink: 0;
+  min-width: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.view-icon-grid__add-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: var(--view-glass-bg);
+  border: 0.5px solid var(--view-glass-border);
+  backdrop-filter: blur(var(--view-blur-soft)) saturate(var(--view-saturate));
+  -webkit-backdrop-filter: blur(var(--view-blur-soft)) saturate(var(--view-saturate));
+  font-size: 1.75rem;
+  font-weight: 300;
+  color: var(--view-text-muted);
+  transition: transform 0.15s ease, background 0.15s ease;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+.view-icon-grid__add:hover .view-icon-grid__add-icon {
+  transform: translateY(-3px) scale(1.05);
+  background: var(--view-glass-hover);
+  color: var(--view-text);
+}
+
+.view-icon-grid__add-label {
+  font-size: 0.75rem;
+  color: transparent;
+  text-align: center;
+  max-width: 72px;
+  height: 1em;
+  line-height: 1;
+}
+
+/* 链接文字去掉下划线 */
+.view-icon-tile__link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.view-icon-tile__icon img {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  object-fit: contain;
+}
+
+.view-icon-tile__icon img[data-favicon] {
+  min-width: 28px;
+  min-height: 28px;
+}
+
+.view-icon-tile__icon img[data-favicon-state='failed'] {
+  opacity: 0.35;
+}
+
+.view-icon-tile__label {
+  font-size: 0.75rem;
+  color: var(--view-text);
+  text-align: center;
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.view-icon-tile__remove {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  display: grid;
+  place-items: center;
+}
+
+.view-icon-tile:hover .view-icon-tile__remove,
+.view-icon-tile__remove:focus-visible {
+  opacity: 1;
+}
+
+.view-icon-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.view-icon-add__icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  border: 1.5px dashed var(--view-glass-border);
+  color: var(--view-text-muted);
+  font-size: 1.5rem;
+  background: transparent;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.view-icon-add:hover .view-icon-add__icon {
+  border-color: var(--view-accent);
+  color: var(--view-text);
+}
+
+.view-icon-add__label {
+  font-size: 0.75rem;
+  color: var(--view-text-muted);
+}
+
+/* ────────────────────────────────────────────────
+   下方组件区
+   ──────────────────────────────────────────────── */
+.view-widgets {
+  margin-top: 2.5rem;
+}
+
+.view-widgets__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.view-widget {
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--radius-lg);
+}
+
+.view-widget__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--view-glass-border-subtle);
+}
+
+.view-widget__title {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--view-text-muted);
+}
+
+.view-widget__add {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  color: var(--view-text);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s;
+}
+.view-widget__add:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+/* 待办 */
+.view-todo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.view-todo-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.view-todo-item + .view-todo-item {
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.view-todo-item input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--view-accent);
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.view-todo-item.done span {
+  text-decoration: line-through;
+  opacity: 0.4;
+}
+
+.view-todo-item__remove {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--view-text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.view-todo-item:hover .view-todo-item__remove {
+  opacity: 1;
+}
+
+.view-todo-form input {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--view-glass-border);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.06);
+  color: var(--view-text);
+  font: inherit;
+  font-size: 0.82rem;
+  outline: none;
+  margin-bottom: 0.5rem;
+}
+
+.view-todo-form input:focus {
+  background: rgba(255,255,255,0.1);
+}
+
+/* 倒数日 */
+.view-countdown-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.view-countdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.875rem;
+}
+
+.view-countdown-item:last-child {
+  border-bottom: none;
+}
+
+.view-countdown-item__days {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.view-countdown-item__days small {
+  font-size: 0.7rem;
+  color: var(--view-text-muted);
+  font-family: var(--font-body);
+  margin-left: 2px;
+}
+
+.view-countdown-add {
+  margin-top: 0.75rem;
+  width: 100%;
+  padding: 0.55rem;
+  border: 1px dashed var(--view-glass-border);
+  border-radius: 10px;
+  background: none;
+  color: var(--view-text-muted);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.view-countdown-add:hover {
+  border-color: var(--view-accent-ring);
+  color: var(--view-text);
+}
+
+/* 天气 */
+.view-weather-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.view-weather-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.view-weather-main .icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+.view-weather-main .temp {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  line-height: 1;
+}
+.view-weather-main .desc {
+  font-size: 0.8rem;
+  color: var(--view-text-muted);
+  margin-top: 2px;
+}
+
+/* 天气 pill（顶栏） */
+.view-weather-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.8125rem;
+  color: var(--view-text);
+}
+
+.view-weather-pill__icon {
+  font-size: 0.9rem;
+}
+
+.view-weather-pill__temp {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ────────────────────────────────────────────────
+   响应式：移动端
+   ──────────────────────────────────────────────── */
+
+/* 搜索 tile 内部 */
+.view-tile--search .view-engines {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.view-tile--search .view-quote {
+  margin: 0;
+  text-align: left;
+  padding: 0;
+}
+
+/* 平板：≤900px，切换为纵向堆叠模式 */
+@media (max-width: 900px) {
+  .view-page {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+    padding: 0.75rem 0 5rem;
+  }
+
+  .view-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    gap: 0.75rem;
+  }
+
+  /* 所有 tile 占满整行，纵向排列 */
+  .view-tile--clock,
+  .view-tile--search,
+  .view-tile--links,
+  .view-tile--todo,
+  .view-tile--countdown,
+  .view-tile--weather {
+    grid-column: 1 / -1 !important;
+    grid-row: auto !important;
+  }
+
+  /* 时钟区变小一点 */
+  .view-tile--clock {
+    padding: 1.5rem 0;
+  }
+
+  /* 链接图标横向滚动 */
+  .view-icon-grid {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  /* 编辑模式：平板/手机关闭拖拽（纵向堆叠意义不大） */
+  .view-grid.editing .view-tile {
+    outline: none;
+    cursor: default;
+  }
+  .view-grid.editing .view-tile:active {
+    cursor: default;
+  }
+}
+
+/* 手机：≤600px，进一步紧凑 */
+@media (max-width: 600px) {
+  .view-big-clock {
+    font-size: clamp(2.8rem, 13vw, 4rem);
+  }
+
+  .view-icon-tile__icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+  }
+
+  .view-icon-tile__icon img {
+    width: 24px;
+    height: 24px;
   }
 }

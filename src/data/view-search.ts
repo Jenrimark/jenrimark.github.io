@@ -1,5 +1,5 @@
 /** /view/ 搜索引擎配置 */
-export type SearchEngineId = 'google' | 'baidu' | 'bing' | 'chatgpt' | 'gemini';
+export type SearchEngineId = 'google' | 'baidu' | 'bing' | 'chatgpt' | 'doubao' | 'deepseek';
 
 export interface SearchEngine {
   id: SearchEngineId;
@@ -36,10 +36,16 @@ export const searchEngines: SearchEngine[] = [
     buildUrl: (q) => `https://chatgpt.com/?q=${encodeURIComponent(q)}`,
   },
   {
-    id: 'gemini',
-    label: 'Gemini',
-    placeholder: '在 Gemini 中提问…',
-    buildUrl: (q) => `https://gemini.google.com/app?q=${encodeURIComponent(q)}`,
+    id: 'doubao',
+    label: '豆包',
+    placeholder: '向豆包提问…',
+    buildUrl: (q) => `https://www.doubao.com/chat/?q=${encodeURIComponent(q)}`,
+  },
+  {
+    id: 'deepseek',
+    label: 'DeepSeek',
+    placeholder: '向 DeepSeek 提问…',
+    buildUrl: (q) => `https://chat.deepseek.com/?q=${encodeURIComponent(q)}`,
   },
 ];
 

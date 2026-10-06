@@ -8,9 +8,22 @@ import { searchEngines } from '../data/view-search';
 
 <ViewLayout title={`View — ${site.name}`}>
   <div class="view-page">
+    <!-- 顶栏 -->
     <header class="view-topbar">
       <a href="/">← {site.name}</a>
-      <div class="view-topbar__actions view-glass view-glass--soft view-glass--pill">
+      <div class="view-topbar__actions">
+        <div id="view-weather-pill" class="view-weather-pill" hidden>
+          <span id="view-weather-icon" class="view-weather-pill__icon"></span>
+          <span id="view-weather-temp" class="view-weather-pill__temp">--°</span>
+        </div>
+        <button
+          type="button"
+          id="view-layout-edit"
+          class="view-btn view-btn--ghost"
+          aria-expanded="false"
+        >
+          编辑布局
+        </button>
         <button
           type="button"
           id="view-theme-toggle"
@@ -30,28 +43,24 @@ import { searchEngines } from '../data/view-search';
         >
           换背景
         </button>
-        <time id="view-clock" class="view-clock" datetime=""></time>
       </div>
     </header>
 
+    <!-- 背景面板（弹层） -->
     <div id="view-bg-panel" class="view-bg-panel view-glass view-glass--strong view-glass--panel" hidden>
       <p class="view-bg-panel__title">换背景</p>
       <p class="view-bg-panel__lead">打开网页即可上传，选图后立刻生效，下次访问会自动恢复。</p>
-
       <button type="button" id="view-bg-dropzone" class="view-bg-dropzone view-glass view-glass--soft view-glass--panel view-glass--dashed">
         <span id="view-bg-dropzone-preview" class="view-bg-dropzone__preview" hidden></span>
         <span id="view-bg-dropzone-icon" class="view-bg-dropzone__icon">+</span>
         <span id="view-bg-dropzone-text" class="view-bg-dropzone__text">点击或拖入图片</span>
         <span class="view-bg-dropzone__hint">jpg / png / webp · 建议 4MB 以内</span>
       </button>
-
       <input id="view-bg-upload" type="file" accept="image/*" hidden />
-
       <div class="view-bg-custom-actions">
         <button type="button" id="view-bg-default-btn" class="view-btn view-glass view-glass--soft view-glass--pill">恢复默认</button>
         <button type="button" id="view-bg-clear-custom" class="view-btn view-glass view-glass--soft view-glass--pill" hidden>删除当前图片</button>
       </div>
-
       <div id="view-bg-dim-wrap" class="view-bg-dim-control" hidden>
         <label for="view-bg-dim">壁纸暗化</label>
         <input id="view-bg-dim" type="range" min="0" max="0.85" step="0.05" value="0.45" />
@@ -59,52 +68,43 @@ import { searchEngines } from '../data/view-search';
       </div>
     </div>
 
-    <section class="view-hero" aria-label="搜索">
-      <h1 class="view-greeting" id="view-greeting">你好</h1>
+    <!-- 主体网格：拼图布局 -->
+    <main class="view-grid" id="view-grid">
+      <!-- 大时钟组件 -->
+      <section class="view-tile view-tile--clock" data-tile="clock" aria-label="时间">
+        <div class="view-clock-inner">
+          <h1 class="view-big-clock" id="view-big-clock">--:--</h1>
+          <p class="view-big-date" id="view-big-date"></p>
+        </div>
+      </section>
 
-      <div class="view-search-wrap">
-        <div class="view-search-anchor">
-          <div class="view-search-box">
-            <form id="view-search-form" class="view-search-form view-glass view-glass--strong view-glass--pill" role="search">
-              <input
-                id="view-search-input"
-                class="view-search-input"
-                type="text"
-                name="q"
-                enterkeyhint="search"
-                inputmode="search"
-                autocomplete="off"
-                autocapitalize="off"
-                spellcheck="false"
-                aria-label="搜索"
-                aria-expanded="false"
-                aria-controls="view-suggest"
-                aria-autocomplete="list"
-              />
-              <button type="button" id="view-search-clear" class="view-search-clear" hidden aria-label="清空">
-                <ClearIcon />
-              </button>
-              <button type="submit" class="view-search-submit" aria-label="搜索">
-                <SearchIcon />
-              </button>
-            </form>
-          </div>
-
-          <div id="view-engines" class="view-engines" role="group" aria-label="搜索引擎">
-            {
-              searchEngines.map((engine) => (
-                <button
-                  type="button"
-                  class="view-engine view-glass view-glass--soft view-glass--pill"
-                  data-engine={engine.id}
-                  aria-pressed={engine.default ? 'true' : 'false'}
-                >
-                  {engine.label}
-                </button>
-              ))
-            }
-          </div>
-
+      <!-- 搜索组件 -->
+      <section class="view-tile view-tile--search" data-tile="search" aria-label="搜索">
+        <div class="view-search-box">
+          <form id="view-search-form" class="view-search-form view-glass view-glass--strong view-glass--pill" role="search">
+            <input
+              id="view-search-input"
+              class="view-search-input"
+              type="text"
+              name="q"
+              enterkeyhint="search"
+              inputmode="search"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+              aria-label="搜索"
+              aria-expanded="false"
+              aria-controls="view-suggest"
+              aria-autocomplete="list"
+            />
+            <button type="button" id="view-search-clear" class="view-search-clear" hidden aria-label="清空">
+              <ClearIcon />
+            </button>
+            <button type="submit" class="view-search-submit" aria-label="搜索">
+              <SearchIcon />
+            </button>
+          </form>
+          <!-- 搜索建议弹层 -->
           <div id="view-suggest" class="view-suggest view-glass view-glass--strong view-glass--card" hidden>
             <div class="view-suggest__cols">
               <div class="view-suggest__col view-suggest__col--query">
@@ -118,87 +118,93 @@ import { searchEngines } from '../data/view-search';
             </div>
           </div>
         </div>
-      </div>
-    </section>
-
-    <section class="view-bookmarks-area" aria-label="快捷链接">
-      <div class="view-toolbar">
-        <div>
-          <h2>快捷链接</h2>
-          <p id="view-status" class="view-status">加载中…</p>
+        <div id="view-engines" class="view-engines" role="group" aria-label="搜索引擎">
+          {
+            searchEngines.map((engine) => (
+              <button
+                type="button"
+                class="view-engine view-glass view-glass--soft view-glass--pill"
+                data-engine={engine.id}
+                aria-pressed={engine.default ? 'true' : 'false'}
+              >
+                {engine.label}
+              </button>
+            ))
+          }
         </div>
-        <div class="view-toolbar-actions">
-          <button type="button" id="view-link-add" class="view-btn view-glass view-glass--soft view-glass--pill" aria-expanded="false" aria-controls="view-links-panel">
-            添加快捷链接
-          </button>
-        </div>
-      </div>
+        <p class="view-quote" id="view-quote" hidden></p>
+      </section>
 
-      <div id="view-links-panel" class="view-links-panel view-glass view-glass--panel" hidden>
-        <form id="view-link-form" class="view-link-form" novalidate>
-          <div class="view-link-form__row">
-            <label class="view-link-form__label" for="view-link-title">标题</label>
-            <input
-              id="view-link-title"
-              class="view-link-form__input"
-              type="text"
-              placeholder="可选，留空则用网站域名"
-              autocomplete="off"
-              spellcheck="false"
-            />
-          </div>
-          <div class="view-link-form__row">
-            <label class="view-link-form__label" for="view-link-url">网址</label>
-            <input
-              id="view-link-url"
-              class="view-link-form__input"
-              type="text"
-              placeholder="https://example.com"
-              autocomplete="off"
-              spellcheck="false"
-              inputmode="url"
-            />
-          </div>
-          <div class="view-link-form__row">
-            <span class="view-link-form__label" id="view-link-icon-label">图标</span>
-            <div class="view-link-iconbox">
-              <span class="view-link-iconbox__preview" aria-hidden="true">
-                <img id="view-link-icon-preview" alt="" width="32" height="32" hidden />
-              </span>
-              <span class="view-link-iconbox__text" id="view-link-icon-text">自动捕捉网站图标</span>
-              <span class="view-link-iconbox__actions">
-                <button type="button" id="view-link-icon-upload" class="view-link-action">上传图片</button>
-                <button type="button" id="view-link-icon-reset" class="view-link-action" hidden>恢复自动</button>
-              </span>
-            </div>
-            <input id="view-link-icon-file" type="file" accept="image/*" hidden />
-          </div>
-          <p id="view-link-error" class="view-link-form__error" role="alert" hidden></p>
-          <div class="view-link-form__actions">
-            <button type="submit" class="view-btn view-btn--accent">添加</button>
-            <button type="button" id="view-link-cancel" class="view-btn">取消</button>
-          </div>
+      <!-- 链接图标网格组件 -->
+      <section class="view-tile view-tile--links" data-tile="links" aria-label="快捷链接">
+        <div id="view-bookmarks" class="view-icon-grid">
+          <p class="view-empty">加载中…</p>
+        </div>
+      </section>
+
+      <!-- 待办组件 -->
+      <section class="view-tile view-tile--todo view-glass" data-tile="todo" aria-label="待办">
+        <div class="view-widget__header">
+          <h3 class="view-widget__title">待办</h3>
+          <button type="button" id="view-todo-add" class="view-widget__add" title="添加待办">+</button>
+        </div>
+        <ul id="view-todo-list" class="view-todo-list"></ul>
+        <form id="view-todo-form" class="view-todo-form" hidden>
+          <input id="view-todo-input" type="text" placeholder="输入后回车添加" autocomplete="off" />
         </form>
-      </div>
+      </section>
 
-      <div id="view-bookmarks" class="view-bookmarks">
-        <p class="view-empty view-glass view-glass--soft view-glass--card view-glass--dashed">加载中…</p>
-      </div>
-    </section>
+      <!-- 倒数日组件 -->
+      <section class="view-tile view-tile--countdown view-glass" data-tile="countdown" aria-label="倒数日">
+        <h3 class="view-widget__title">倒数日</h3>
+        <ul id="view-countdown-list" class="view-countdown-list"></ul>
+        <button type="button" id="view-countdown-add" class="view-countdown-add">+ 添加</button>
+      </section>
+
+      <!-- 天气详情组件 -->
+      <section class="view-tile view-tile--weather view-glass" data-tile="weather" aria-label="天气">
+        <h3 class="view-widget__title">天气</h3>
+        <div id="view-weather-detail" class="view-weather-detail">
+          <span style="font-size:0.82rem;color:var(--view-text-muted);">定位中…</span>
+        </div>
+      </section>
+    </main>
+
+    <!-- 添加链接面板（弹层） -->
+    <div id="view-links-panel" class="view-links-panel view-glass view-glass--panel" hidden>
+      <form id="view-link-form" class="view-link-form" novalidate>
+        <div class="view-link-form__row">
+          <label class="view-link-form__label" for="view-link-title">标题</label>
+          <input id="view-link-title" class="view-link-form__input" type="text" placeholder="可选，留空则用网站域名" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="view-link-form__row">
+          <label class="view-link-form__label" for="view-link-url">网址</label>
+          <input id="view-link-url" class="view-link-form__input" type="text" placeholder="https://example.com" autocomplete="off" spellcheck="false" inputmode="url" />
+        </div>
+        <div class="view-link-form__row">
+          <span class="view-link-form__label" id="view-link-icon-label">图标</span>
+          <div class="view-link-iconbox">
+            <span class="view-link-iconbox__preview" aria-hidden="true">
+              <img id="view-link-icon-preview" alt="" width="32" height="32" hidden />
+            </span>
+            <span class="view-link-iconbox__text" id="view-link-icon-text">自动捕捉网站图标</span>
+            <span class="view-link-iconbox__actions">
+              <button type="button" id="view-link-icon-upload" class="view-link-action">上传图片</button>
+              <button type="button" id="view-link-icon-reset" class="view-link-action" hidden>恢复自动</button>
+            </span>
+          </div>
+          <input id="view-link-icon-file" type="file" accept="image/*" hidden />
+        </div>
+        <p id="view-link-error" class="view-link-form__error" role="alert" hidden></p>
+        <div class="view-link-form__actions">
+          <button type="submit" class="view-btn view-btn--accent">添加</button>
+          <button type="button" id="view-link-cancel" class="view-btn">取消</button>
+        </div>
+      </form>
+    </div>
   </div>
 </ViewLayout>
 
 <script>
   import '../scripts/view-page';
-
-  const greetEl = document.getElementById('view-greeting');
-  if (greetEl) {
-    const h = new Date().getHours();
-    let text = '晚上好';
-    if (h < 6) text = '夜深了';
-    else if (h < 12) text = '早上好';
-    else if (h < 14) text = '中午好';
-    else if (h < 18) text = '下午好';
-    greetEl.textContent = text;
-  }
 </script>

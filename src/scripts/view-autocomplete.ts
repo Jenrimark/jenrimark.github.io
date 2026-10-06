@@ -56,7 +56,7 @@ function fetchGoogleSuggestions(query: string): Promise<string[]> {
       resolve(items);
     };
 
-    const timer = setTimeout(() => finish([]), 5000);
+    const timer = setTimeout(() => finish([]), 3000);
 
     (window as unknown as Record<string, unknown>)[cb] = (data: unknown) => {
       if (!Array.isArray(data) || !Array.isArray(data[1])) {
@@ -71,6 +71,39 @@ function fetchGoogleSuggestions(query: string): Promise<string[]> {
 
     script = document.createElement('script');
     script.src = `https://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(q)}&callback=${cb}`;
+    script.onerror = () => finish([]);
+    document.head.appendChild(script);
+  });
+}
+
+/** 百度搜索建议（国内可用） */
+function fetchBaiduSuggestions(query: string): Promise<string[]> {
+  const q = query.trim();
+  if (!q) return Promise.resolve([]);
+
+  return new Promise((resolve) => {
+    const cb = `_bsc_${Date.now().toString(36)}`;
+    let script: HTMLScriptElement | null = null;
+
+    const finish = (items: string[]) => {
+      clearTimeout(timer);
+      delete (window as unknown as Record<string, unknown>)[cb];
+      script?.remove();
+      resolve(items);
+    };
+
+    const timer = setTimeout(() => finish([]), 3000);
+
+    (window as unknown as Record<string, unknown>)[cb] = (data: { s?: string[] }) => {
+      if (!data || !Array.isArray(data.s)) {
+        finish([]);
+        return;
+      }
+      finish(data.s.filter(Boolean));
+    };
+
+    script = document.createElement('script');
+    script.src = `https://www.baidu.com/su?wd=${encodeURIComponent(q)}&cb=${cb}`;
     script.onerror = () => finish([]);
     document.head.appendChild(script);
   });
@@ -132,6 +165,11 @@ export function initSearchAutocomplete({
   const show = () => {
     panel.hidden = false;
     input.setAttribute('aria-expanded', 'true');
+    // 动态定位：相对于输入框
+    const rect = input.getBoundingClientRect();
+    panel.style.top = `${rect.bottom + 8}px`;
+    panel.style.left = `${rect.left}px`;
+    panel.style.width = `${rect.width}px`;
   };
 
   const pickQuery = (item: QueryItem | undefined) => {
@@ -230,11 +268,16 @@ export function initSearchAutocomplete({
     const id = ++requestId;
 
     const recent = matchRecent(query);
-    const google = isGoogle() && query.trim() ? await fetchGoogleSuggestions(query) : [];
+    let engineSuggest: string[] = [];
+    if (query.trim()) {
+      engineSuggest = isGoogle()
+        ? await fetchGoogleSuggestions(query)
+        : await fetchBaiduSuggestions(query);
+    }
 
     if (id !== requestId) return;
 
-    queryItems = mergeQuerySuggestions(recent, google);
+    queryItems = mergeQuerySuggestions(recent, engineSuggest);
     linkItems = searchLinks(query);
 
     active = null;

@@ -10,28 +10,20 @@ import { initSearchAutocomplete, saveRecentQuery } from './view-autocomplete';
 import { getLinks, addLink, removeLink } from './view-links-state';
 import { initViewBackground } from './view-background';
 import { initViewTheme } from './view-theme';
+import { initViewClock } from './view-clock';
+import { initViewWeather } from './view-weather';
+import { initViewQuote } from './view-quote';
+import { initViewTodo } from './view-todo';
+import { initViewCountdown } from './view-countdown';
+import { initViewLayout } from './view-layout';
 
 function getEngine(id: SearchEngineId) {
   return searchEngines.find((e) => e.id === id) ?? searchEngines[0];
 }
 
 function loadEngineId(): SearchEngineId {
-  const stored = localStorage.getItem(STORAGE_ENGINE);
-  if (stored && searchEngines.some((e) => e.id === stored)) {
-    return stored as SearchEngineId;
-  }
+  // 每次刷新都默认谷歌，不记住上次选择
   return defaultSearchEngineId;
-}
-
-function updateClock(el: HTMLElement) {
-  const now = new Date();
-  const date = now.toLocaleDateString('zh-CN', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
-  const time = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-  el.textContent = `${date} · ${time}`;
 }
 
 function escapeHtml(s: string): string {
@@ -146,37 +138,41 @@ function initSearch() {
   input.focus();
 }
 
-function initClock() {
-  const el = document.getElementById('view-clock');
-  if (!el) return;
-  updateClock(el);
-  setInterval(() => updateClock(el), 30_000);
-}
-
+/** 渲染链接为图标 tile 网格 */
 function renderLinks(container: HTMLElement, links: ViewLink[]) {
+  const addBtnHtml = `
+    <button type="button" id="view-link-add" class="view-icon-grid__add" aria-expanded="false" aria-controls="view-links-panel" title="添加快捷链接">
+      <span class="view-icon-grid__add-icon">+</span>
+      <span class="view-icon-grid__add-label"></span>
+    </button>`;
+
   if (links.length === 0) {
-    container.innerHTML =
-      '<p class="view-empty view-glass view-glass--soft view-glass--card view-glass--dashed">还没有快捷链接 · 点右上角「添加快捷链接」开始 DIY</p>';
+    container.innerHTML = `
+      <div style="flex:1; text-align:center; padding:1rem; color:var(--view-text-muted); font-size:0.875rem;">
+        还没有快捷链接 · 点右侧 + 添加
+      </div>${addBtnHtml}`;
     return;
   }
 
-  container.innerHTML = `<div class="view-link-grid">
-    ${links
-      .map((link) => {
-        const customIcon = Boolean(link.icon);
-        const iconSrc = link.icon ?? faviconSrcForRender(link.url);
-        const faviconAttrs = customIcon ? '' : ' data-favicon data-favicon-state="pending"';
-        return `
-      <div class="view-link-card view-glass view-glass--soft view-glass--card">
-        <a class="view-link-card__link" href="${escapeAttr(link.url)}" target="_blank" rel="noopener noreferrer">
-          <img src="${escapeAttr(iconSrc)}"${faviconAttrs} alt="" width="20" height="20" decoding="async" referrerpolicy="no-referrer" />
-          <span>${escapeHtml(link.title)}</span>
+  const tiles = links
+    .map((link) => {
+      const customIcon = Boolean(link.icon);
+      const iconSrc = link.icon ?? faviconSrcForRender(link.url);
+      const faviconAttrs = customIcon ? '' : ' data-favicon data-favicon-state="pending"';
+      return `
+      <div class="view-icon-tile" data-id="${escapeAttr(link.id)}">
+        <a class="view-icon-tile__link" href="${escapeAttr(link.url)}" target="_blank" rel="noopener noreferrer">
+          <div class="view-icon-tile__icon">
+            <img src="${escapeAttr(iconSrc)}"${faviconAttrs} alt="" width="28" height="28" decoding="async" referrerpolicy="no-referrer" />
+          </div>
+          <span class="view-icon-tile__label">${escapeHtml(link.title)}</span>
         </a>
-        <button type="button" class="view-link-card__remove" data-remove-id="${escapeAttr(link.id)}" aria-label="删除 ${escapeAttr(link.title)}" title="删除">×</button>
+        <button type="button" class="view-icon-tile__remove" data-remove-id="${escapeAttr(link.id)}" aria-label="删除 ${escapeAttr(link.title)}" title="删除">×</button>
       </div>`;
-      })
-      .join('')}
-  </div>`;
+    })
+    .join('');
+
+  container.innerHTML = tiles + addBtnHtml;
 
   hydrateFaviconImages(container);
 }
@@ -191,7 +187,6 @@ function bindFaviconRetry(container: HTMLElement) {
 
 function initLinks() {
   const container = document.getElementById('view-bookmarks');
-  const statusEl = document.getElementById('view-status');
   const addBtn = document.getElementById('view-link-add');
   const panel = document.getElementById('view-links-panel');
   const form = document.getElementById('view-link-form') as HTMLFormElement | null;
@@ -204,17 +199,13 @@ function initLinks() {
   const iconReset = document.getElementById('view-link-icon-reset') as HTMLButtonElement | null;
   const iconFile = document.getElementById('view-link-icon-file') as HTMLInputElement | null;
   const cancelBtn = document.getElementById('view-link-cancel');
-  if (!container || !addBtn || !panel || !form || !urlInput || !errorEl) return;
+  if (!container || !panel || !form || !urlInput || !errorEl) return;
 
   let pendingIcon: string | null = null;
 
   const refresh = () => {
     renderLinks(container, getLinks());
     bindFaviconRetry(container);
-    if (statusEl) {
-      const n = getLinks().length;
-      statusEl.textContent = n === 0 ? '还没有快捷链接' : `共 ${n} 个快捷链接 · 保存在本机`;
-    }
   };
 
   const previewAutoIcon = () => {
@@ -260,16 +251,18 @@ function initLinks() {
 
   const open = () => {
     panel.hidden = false;
-    addBtn.setAttribute('aria-expanded', 'true');
+    document.getElementById('view-link-add')?.setAttribute('aria-expanded', 'true');
     titleInput?.focus();
   };
 
   const close = () => {
     panel.hidden = true;
-    addBtn.setAttribute('aria-expanded', 'false');
+    document.getElementById('view-link-add')?.setAttribute('aria-expanded', 'false');
   };
 
-  addBtn.addEventListener('click', () => {
+  container.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    if (!target.closest('#view-link-add')) return;
     if (panel.hidden) {
       resetForm();
       open();
@@ -354,7 +347,7 @@ function initLinks() {
   });
 
   container.addEventListener('click', (e) => {
-    const btn = (e.target as Element).closest<HTMLButtonElement>('.view-link-card__remove');
+    const btn = (e.target as Element).closest<HTMLButtonElement>('.view-icon-tile__remove');
     if (!btn) return;
     const id = btn.dataset.removeId;
     if (!id) return;
@@ -376,11 +369,16 @@ function initKeyboard() {
 
 export function initViewPage() {
   initViewTheme();
-  initClock();
+  initViewClock();
   initSearch();
   initLinks();
   initKeyboard();
   initViewBackground();
+  void initViewWeather();
+  void initViewQuote();
+  initViewTodo();
+  initViewCountdown();
+  initViewLayout();
 }
 
 if (typeof document !== 'undefined') {
