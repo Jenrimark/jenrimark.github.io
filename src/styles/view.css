@@ -273,7 +273,8 @@ html[data-view-theme='dark'] .view-glass--interactive:hover {
   flex-direction: column;
   gap: 0.75rem;
   padding: 1rem 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* 主体拼图网格：12列 × 6行，大小完全由 grid 决定 */
@@ -320,8 +321,10 @@ html[data-view-theme='dark'] .view-glass--interactive:hover {
   grid-row: 1 / span 2;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.75rem;
+  padding-top: 1rem;
+}
   padding: 1rem;
 }
 
@@ -329,8 +332,8 @@ html[data-view-theme='dark'] .view-glass--interactive:hover {
   grid-column: 1 / -1;
   grid-row: 3;
   display: flex;
-  align-items: center;
-  padding: 0 1rem;
+  align-items: flex-start;
+  padding: 0.75rem 1rem;
 }
 
 .view-tile--todo {
@@ -695,9 +698,17 @@ html[data-view-theme='dark'] .view-search-form.view-glass::before {
   position: relative;
   z-index: 2;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
   gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.view-engines::-webkit-scrollbar {
+  display: none;
+}
   margin-top: 0.85rem;
 }
 
@@ -1636,7 +1647,7 @@ html[data-view-theme='dark'] .view-big-clock {
 /* 搜索 tile 内部 */
 .view-tile--search .view-engines {
   justify-content: flex-start;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .view-tile--search .view-quote {
