@@ -114,33 +114,36 @@ function initIPInfo() {
     `;
   };
 
-  const fetchIP = async () => {
+  const fetchIP = () => {
     content.innerHTML = '<span style="font-size:0.82rem;color:var(--view-text-muted);">加载中…</span>';
-    try {
-      const res = await fetch('https://whois.pconline.com.cn/ipJson.jsp?json=true');
-      const text = await res.text();
-      // 接口返回可能是 JSONP 或纯 JSON，提取 JSON 部分
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('invalid response');
-      const data = JSON.parse(jsonMatch[0]);
-      if (data.ip) {
-        // 从 addr 字段提取运营商
-        const addr = data.addr || '';
-        const ispMatch = addr.match(/ (电信|联通|移动|铁通|广电|教育网)/);
-        const result = {
-          ip: data.ip,
-          pro: data.pro || '',
-          city: data.city || '',
-          isp: ispMatch ? ispMatch[1] : (addr.split(' ').pop() || '--'),
-        };
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ data: result, time: Date.now() }));
-        render(result);
-      } else {
-        content.innerHTML = `<span style="font-size:0.82rem;color:#ff453a;">获取失败</span>`;
+    // 用搜狐 JSONP 接口，不受跨域限制
+    const script = document.createElement('script');
+    script.src = 'https://pv.sohu.com/cityjson?ie=utf-8';
+    script.onload = () => {
+      try {
+        const data = (window as any).returnCitySN;
+        if (data && data.cip) {
+          const result = {
+            ip: data.cip,
+            pro: '',
+            city: data.cname || '',
+            isp: '--',
+          };
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ data: result, time: Date.now() }));
+          render(result);
+        } else {
+          content.innerHTML = '<span style="font-size:0.82rem;color:#ff453a;">获取失败</span>';
+        }
+      } catch {
+        content.innerHTML = '<span style="font-size:0.82rem;color:#ff453a;">解析失败</span>';
       }
-    } catch {
+      script.remove();
+    };
+    script.onerror = () => {
       content.innerHTML = '<span style="font-size:0.82rem;color:#ff453a;">网络请求失败</span>';
-    }
+      script.remove();
+    };
+    document.body.appendChild(script);
   };
 
   // 先读缓存
