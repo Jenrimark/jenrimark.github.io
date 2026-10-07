@@ -109,26 +109,34 @@ function initIPInfo() {
   const render = (data: any) => {
     content.innerHTML = `
       <div class="view-ipinfo__row"><span class="view-ipinfo__label">IP</span><span class="view-ipinfo__value">${data.ip || '--'}</span></div>
-      <div class="view-ipinfo__row"><span class="view-ipinfo__label">地区</span><span class="view-ipinfo__value">${data.pro || ''} ${data.city || ''}</span></div>
-      <div class="view-ipinfo__row"><span class="view-ipinfo__label">运营商</span><span class="view-ipinfo__value">${data.isp || '--'}</span></div>
+      <div class="view-ipinfo__row"><span class="view-ipinfo__label">地区</span><span class="view-ipinfo__value">${data.region || '--'}</span></div>
+      <div class="view-ipinfo__row"><span class="view-ipinfo__label">运营商</span><span class="view-ipinfo__value">${data.isp || '未知'}</span></div>
     `;
   };
 
   // 从完整地址中提取运营商
   const extractISP = (addr: string): string => {
-    if (!addr) return '--';
+    if (!addr) return '';
     const isps = ['电信', '联通', '移动', '铁通', '广电', '长城宽带', '鹏博士', '教育网', '科技网'];
     for (const isp of isps) {
       if (addr.includes(isp)) return isp;
     }
-    return '--';
+    return '';
+  };
+
+  // 从地址中去掉运营商，得到纯地区
+  const extractRegion = (addr: string, isp: string): string => {
+    if (!addr) return '';
+    let region = addr.trim();
+    if (isp) region = region.replace(isp, '').trim();
+    return region;
   };
 
   const fetchIP = () => {
     content.innerHTML = '<span style="font-size:0.82rem;color:var(--view-text-muted);">加载中…</span>';
 
     // 太平洋电脑网 JSONP 接口（国内可访问，信息全：IP/省份/城市/运营商）
-    const fetchPconline = (): Promise<{ ip: string; pro: string; city: string; isp: string }> => {
+    const fetchPconline = (): Promise<{ ip: string; region: string; isp: string }> => {
       return new Promise((resolve, reject) => {
         const cb = `_ipcb_${Date.now().toString(36)}`;
         const script = document.createElement('script');
@@ -143,11 +151,11 @@ function initIPInfo() {
         (window as any)[cb] = (data: any) => {
           cleanup();
           if (data && data.ip) {
+            const isp = extractISP(data.addr || '');
             resolve({
               ip: data.ip,
-              pro: data.pro || '',
-              city: data.city || '',
-              isp: extractISP(data.addr || ''),
+              region: extractRegion(data.addr || '', isp),
+              isp,
             });
           } else {
             reject(new Error('no data'));
@@ -162,10 +170,10 @@ function initIPInfo() {
     };
 
     // 备用：ipify（仅获取 IP）
-    const fetchIpify = (): Promise<{ ip: string; pro: string; city: string; isp: string }> => {
+    const fetchIpify = (): Promise<{ ip: string; region: string; isp: string }> => {
       return fetch('https://api.ipify.org?format=json')
         .then(r => r.json())
-        .then(d => ({ ip: d.ip, pro: '', city: '', isp: '--' }));
+        .then(d => ({ ip: d.ip, region: '', isp: '' }));
     };
 
     const doFetch = async () => {
