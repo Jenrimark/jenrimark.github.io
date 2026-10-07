@@ -236,38 +236,6 @@ function retryFailedFavicons(container: HTMLElement) {
   });
 }
 
-/** 异步解析一个页面的可用 favicon；成功则写入缓存并返回 src，全部失败返回 null */
-export function resolveFavicon(pageUrl: string): Promise<string | null> {
-  const host = hostFromUrl(pageUrl);
-  if (!host) return Promise.resolve(null);
-
-  const cached = getCachedFavicon(pageUrl);
-  if (cached) return Promise.resolve(cached);
-
-  const candidates = faviconProviders(host);
-  return new Promise((resolve) => {
-    let index = 0;
-    const tryNext = () => {
-      if (index >= candidates.length) {
-        resolve(null);
-        return;
-      }
-      const src = candidates[index];
-      index += 1;
-      const probe = new Image();
-      probe.onload = () => {
-        persist(host, src);
-        resolve(src);
-      };
-      probe.onerror = () => {
-        tryNext();
-      };
-      probe.src = src;
-    };
-    tryNext();
-  });
-}
-
 /** 渲染后加载图标；刷新页面会重新走一遍；失败项延迟自动重试 */
 export function hydrateFaviconImages(container: HTMLElement) {
   clearRetryTimers();

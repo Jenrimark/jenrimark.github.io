@@ -66,34 +66,6 @@ export function removeLink(id: string): void {
   emit();
 }
 
-/**
- * 编辑已有链接。patch.icon 语义：
- * - 不传（undefined）：保留原图标 —— 更换 URL 时不会被新抓取的头像覆盖；
- * - null：清除固定图标，恢复自动抓取；
- * - 字符串：固化为指定图标。
- */
-export function updateLink(
-  id: string,
-  patch: { title?: string; url?: string; icon?: string | null },
-): void {
-  const index = links.findIndex((l) => l.id === id);
-  if (index === -1) return;
-  const current = links[index];
-  const next: ViewLink = {
-    id: current.id,
-    title: patch.title !== undefined && patch.title.trim() !== '' ? patch.title.trim() : current.title,
-    url: patch.url !== undefined && patch.url.trim() !== '' ? patch.url.trim() : current.url,
-  };
-  if (patch.icon !== undefined) {
-    if (patch.icon) next.icon = patch.icon;
-  } else if (current.icon) {
-    next.icon = current.icon;
-  }
-  links = links.map((l) => (l.id === id ? next : l));
-  persist();
-  emit();
-}
-
 export interface FlatLink {
   id: string;
   title: string;
