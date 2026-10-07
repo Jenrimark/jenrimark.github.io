@@ -4,9 +4,10 @@ import { faviconSrcForRender, hydrateFaviconImages } from './favicon-cache';
 import { searchLinks, onLinksChange, type FlatLink } from './view-links-state';
 
 // Cloudflare Worker 代理地址
-const PROXY_BASE = 'https://aged-darkness-4669.jenrimark.workers.dev';
-function proxyUrl(targetUrl: string): string {
-  return `${PROXY_BASE}/?url=${encodeURIComponent(targetUrl)}`;
+// 云服务器 Nginx 反向代理前缀
+const PROXY_BASE = '/proxy';
+function proxyUrl(targetPath: string): string {
+  return `${PROXY_BASE}${targetPath}`;
 }
 
 const STORAGE_RECENT = 'view:search-recent';
@@ -76,8 +77,7 @@ function fetchGoogleSuggestions(query: string): Promise<string[]> {
     };
 
     script = document.createElement('script');
-    const target = `https://suggestqueries.google.com/complete/search?client=chrome&q=${encodeURIComponent(q)}&callback=${cb}`;
-    script.src = proxyUrl(target);
+    script.src = proxyUrl(`/google-suggest/complete/search?client=chrome&q=${encodeURIComponent(q)}&callback=${cb}`);
     script.onerror = () => finish([]);
     document.head.appendChild(script);
   });
