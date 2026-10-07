@@ -46,6 +46,12 @@ import { searchEngines } from '../data/view-search';
       </div>
     </header>
 
+    <!-- 编辑模式：组件列表面板 -->
+    <div id="view-layout-panel" class="view-layout-panel view-glass view-glass--strong" hidden>
+      <p class="view-layout-panel__title">添加组件</p>
+      <ul id="view-layout-panel-list" class="view-layout-panel__list"></ul>
+    </div>
+
     <!-- 背景面板（弹层） -->
     <div id="view-bg-panel" class="view-bg-panel view-glass view-glass--strong view-glass--panel" hidden>
       <p class="view-bg-panel__title">换背景</p>
@@ -161,14 +167,95 @@ import { searchEngines } from '../data/view-search';
         <button type="button" id="view-countdown-add" class="view-countdown-add">+ 添加</button>
       </section>
 
-      <!-- 天气详情组件 -->
-      <section class="view-tile view-tile--weather view-glass" data-tile="weather" aria-label="天气">
-        <h3 class="view-widget__title">天气</h3>
-        <div id="view-weather-detail" class="view-weather-detail">
-          <span style="font-size:0.82rem;color:var(--view-text-muted);">定位中…</span>
+      <!-- 音乐播放器组件 -->
+      <section class="view-tile view-tile--music view-glass" data-tile="music" aria-label="音乐播放器">
+        <div class="view-widget__header">
+          <h3 class="view-widget__title">音乐</h3>
+          <label class="view-music__upload" title="添加音乐">
+            <span>+</span>
+            <input type="file" id="view-music-file" accept="audio/*" multiple hidden />
+          </label>
+        </div>
+        <div class="view-music__cover" id="view-music-cover">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        </div>
+        <p class="view-music__title" id="view-music-title">未播放</p>
+        <div class="view-music__progress">
+          <span class="view-music__time" id="view-music-current">0:00</span>
+          <div class="view-music__bar" id="view-music-bar">
+            <div class="view-music__bar-fill" id="view-music-bar-fill"></div>
+          </div>
+          <span class="view-music__time" id="view-music-duration">0:00</span>
+        </div>
+        <div class="view-music__controls">
+          <button type="button" id="view-music-prev" class="view-music__btn" title="上一首">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+          </button>
+          <button type="button" id="view-music-play" class="view-music__btn view-music__btn--play" title="播放">
+            <svg id="view-music-play-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button type="button" id="view-music-next" class="view-music__btn" title="下一首">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+          </button>
+        </div>
+        <audio id="view-music-audio"></audio>
+      </section>
+
+      <!-- IP信息组件 -->
+      <section class="view-tile view-tile--ipinfo view-glass" data-tile="ipinfo" aria-label="IP信息">
+        <div class="view-widget__header">
+          <h3 class="view-widget__title">IP信息</h3>
+          <button type="button" id="view-ipinfo-refresh" class="view-widget__add" title="刷新">↻</button>
+        </div>
+        <div id="view-ipinfo-content" class="view-ipinfo__content">
+          <span style="font-size:0.82rem;color:var(--view-text-muted);">加载中…</span>
         </div>
       </section>
+
+      <!-- 快捷翻译组件 -->
+      <section class="view-tile view-tile--translate view-glass" data-tile="translate" aria-label="快捷翻译">
+        <div class="view-widget__header">
+          <h3 class="view-widget__title">翻译</h3>
+        </div>
+        <div class="view-translate__langs">
+          <select id="view-translate-from" class="view-translate__select">
+            <option value="auto">自动检测</option>
+            <option value="zh-CN">中文</option>
+            <option value="en">英语</option>
+            <option value="ja">日语</option>
+            <option value="ko">韩语</option>
+          </select>
+          <button type="button" id="view-translate-swap" class="view-translate__swap" title="交换语言">⇄</button>
+          <select id="view-translate-to" class="view-translate__select">
+            <option value="zh-CN">中文</option>
+            <option value="en" selected>英语</option>
+            <option value="ja">日语</option>
+            <option value="ko">韩语</option>
+          </select>
+        </div>
+        <textarea id="view-translate-input" class="view-translate__input" placeholder="输入要翻译的文字…" rows="2"></textarea>
+        <button type="button" id="view-translate-btn" class="view-translate__btn">翻译</button>
+        <div class="view-translate__result-wrap">
+          <p id="view-translate-result" class="view-translate__result"></p>
+          <button type="button" id="view-translate-copy" class="view-translate__copy" title="复制" hidden>复制</button>
+        </div>
+      </section>
+
+      <!-- 二维码生成组件 -->
+      <section class="view-tile view-tile--qrcode view-glass" data-tile="qrcode" aria-label="二维码生成">
+        <div class="view-widget__header">
+          <h3 class="view-widget__title">二维码</h3>
+        </div>
+        <input type="text" id="view-qrcode-input" class="view-qrcode__input" placeholder="输入文字或链接…" autocomplete="off" />
+        <div class="view-qrcode__canvas" id="view-qrcode-canvas">
+          <span style="font-size:0.8rem;color:var(--view-text-muted);">输入后生成</span>
+        </div>
+        <button type="button" id="view-qrcode-download" class="view-qrcode__download" hidden>下载二维码</button>
+      </section>
     </main>
+
+    <!-- 添加链接遮罩层 -->
+    <div id="view-links-overlay" class="view-links-overlay" hidden></div>
 
     <!-- 添加链接面板（弹层） -->
     <div id="view-links-panel" class="view-links-panel view-glass view-glass--panel" hidden>
@@ -197,8 +284,8 @@ import { searchEngines } from '../data/view-search';
         </div>
         <p id="view-link-error" class="view-link-form__error" role="alert" hidden></p>
         <div class="view-link-form__actions">
-          <button type="submit" class="view-btn view-btn--accent">添加</button>
           <button type="button" id="view-link-cancel" class="view-btn">取消</button>
+          <button type="submit" class="view-btn view-btn--accent">添加</button>
         </div>
       </form>
     </div>
@@ -207,4 +294,5 @@ import { searchEngines } from '../data/view-search';
 
 <script>
   import '../scripts/view-page';
+  import '../scripts/view-widgets';
 </script>

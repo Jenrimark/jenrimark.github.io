@@ -189,6 +189,7 @@ function initLinks() {
   const container = document.getElementById('view-bookmarks');
   const addBtn = document.getElementById('view-link-add');
   const panel = document.getElementById('view-links-panel');
+  const overlay = document.getElementById('view-links-overlay');
   const form = document.getElementById('view-link-form') as HTMLFormElement | null;
   const titleInput = document.getElementById('view-link-title') as HTMLInputElement | null;
   const urlInput = document.getElementById('view-link-url') as HTMLInputElement | null;
@@ -251,14 +252,18 @@ function initLinks() {
 
   const open = () => {
     panel.hidden = false;
+    if (overlay) overlay.hidden = false;
     document.getElementById('view-link-add')?.setAttribute('aria-expanded', 'true');
     titleInput?.focus();
   };
 
   const close = () => {
     panel.hidden = true;
+    if (overlay) overlay.hidden = true;
     document.getElementById('view-link-add')?.setAttribute('aria-expanded', 'false');
   };
+
+  overlay?.addEventListener('click', close);
 
   container.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
