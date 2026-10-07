@@ -114,49 +114,62 @@ function initIPInfo() {
     `;
   };
 
+  // 从完整地址中提取运营商
+  const extractISP = (addr: string): string => {
+    if (!addr) return '--';
+    const isps = ['电信', '联通', '移动', '铁通', '广电', '长城宽带', '鹏博士', '教育网', '科技网'];
+    for (const isp of isps) {
+      if (addr.includes(isp)) return isp;
+    }
+    return '--';
+  };
+
   const fetchIP = () => {
     content.innerHTML = '<span style="font-size:0.82rem;color:var(--view-text-muted);">加载中…</span>';
 
-    // 检测是否为内网/保留 IP，这类结果不缓存
-    const isPrivateIP = (ip: string): boolean => {
-      if (!ip) return true;
-      return /^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|0\.|::1|fe80:)/i.test(ip);
-    };
-
-    // 搜狐 JSONP 接口（国内可访问，不受跨域限制）
-    const fetchSohu = (): Promise<{ ip: string; city: string }> => {
+    // 太平洋电脑网 JSONP 接口（国内可访问，信息全：IP/省份/城市/运营商）
+    const fetchPconline = (): Promise<{ ip: string; pro: string; city: string; isp: string }> => {
       return new Promise((resolve, reject) => {
+        const cb = `_ipcb_${Date.now().toString(36)}`;
         const script = document.createElement('script');
-        script.src = 'https://pv.sohu.com/cityjson?ie=utf-8';
-        const timer = setTimeout(() => { script.remove(); reject(new Error('timeout')); }, 8000);
-        script.onload = () => {
+        const timer = setTimeout(() => { cleanup(); reject(new Error('timeout')); }, 8000);
+
+        const cleanup = () => {
           clearTimeout(timer);
-          try {
-            const data = (window as any).returnCitySN;
-            if (data && data.cip) {
-              resolve({ ip: data.cip, city: data.cname || '' });
-            } else {
-              reject(new Error('no data'));
-            }
-          } catch { reject(new Error('parse error')); }
+          delete (window as any)[cb];
           script.remove();
         };
-        script.onerror = () => { clearTimeout(timer); script.remove(); reject(new Error('network')); };
+
+        (window as any)[cb] = (data: any) => {
+          cleanup();
+          if (data && data.ip) {
+            resolve({
+              ip: data.ip,
+              pro: data.pro || '',
+              city: data.city || '',
+              isp: extractISP(data.addr || ''),
+            });
+          } else {
+            reject(new Error('no data'));
+          }
+        };
+
+        script.src = `https://whois.pconline.com.cn/ipJson.jsp?json=true&callback=${cb}`;
+        script.onerror = () => { cleanup(); reject(new Error('network')); };
         document.body.appendChild(script);
       });
     };
 
-    // 备用：ipify + 本地解析（仅获取 IP，地区留空）
-    const fetchIpify = (): Promise<{ ip: string; city: string }> => {
+    // 备用：ipify（仅获取 IP）
+    const fetchIpify = (): Promise<{ ip: string; pro: string; city: string; isp: string }> => {
       return fetch('https://api.ipify.org?format=json')
         .then(r => r.json())
-        .then(d => ({ ip: d.ip, city: '' }));
+        .then(d => ({ ip: d.ip, pro: '', city: '', isp: '--' }));
     };
 
     const doFetch = async () => {
       try {
-        let result = await fetchSohu();
-        // 搜狐返回内网 IP 时用备用接口
+        let result = await fetchPconline();
         if (isPrivateIP(result.ip)) {
           result = await fetchIpify();
         }
@@ -164,9 +177,8 @@ function initIPInfo() {
           content.innerHTML = '<span style="font-size:0.82rem;color:#ff453a;">获取失败（内网环境）</span>';
           return;
         }
-        const data = { ip: result.ip, pro: '', city: result.city, isp: '--' };
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ data, time: Date.now() }));
-        render(data);
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ data: result, time: Date.now() }));
+        render(result);
       } catch {
         content.innerHTML = '<span style="font-size:0.82rem;color:#ff453a;">网络请求失败</span>';
       }
