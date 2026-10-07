@@ -114,9 +114,10 @@ function updateClock() {
   const now = new Date();
   const h = String(now.getHours()).padStart(2, '0');
   const m = String(now.getMinutes()).padStart(2, '0');
+  const s = String(now.getSeconds()).padStart(2, '0');
 
   const clockEl = document.getElementById('view-big-clock');
-  if (clockEl) clockEl.textContent = `${h}:${m}`;
+  if (clockEl) clockEl.textContent = `${h}:${m}:${s}`;
 
   const dateEl = document.getElementById('view-big-date');
   if (dateEl) {
