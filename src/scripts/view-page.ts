@@ -187,7 +187,6 @@ function bindFaviconRetry(container: HTMLElement) {
 
 function initLinks() {
   const container = document.getElementById('view-bookmarks');
-  const addBtn = document.getElementById('view-link-add');
   const panel = document.getElementById('view-links-panel');
   const overlay = document.getElementById('view-links-overlay');
   const form = document.getElementById('view-link-form') as HTMLFormElement | null;
@@ -337,7 +336,9 @@ function initLinks() {
   document.addEventListener('click', (e) => {
     if (panel.hidden) return;
     const target = e.target as Node;
-    if (!panel.contains(target) && !addBtn?.contains(target)) close();
+    // 实时判断，避免依赖 init 时可能尚不存在的 addBtn 元素
+    const inAddBtn = target instanceof Element && target.closest('#view-link-add') !== null;
+    if (!panel.contains(target) && !inAddBtn) close();
   });
 
   urlInput.addEventListener('input', () => {

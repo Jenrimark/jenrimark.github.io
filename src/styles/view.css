@@ -1475,8 +1475,12 @@ html[data-view-theme='dark'] .view-big-clock {
   line-height: 1;
 }
 
-/* 链接文字去掉下划线 */
+/* 链接文字去掉下划线；图标与文字统一水平居中，避免文字比图标窄时错位 */
 .view-icon-tile__link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
   text-decoration: none;
   color: inherit;
 }
