@@ -95,7 +95,7 @@ export function initViewCountdown() {
 
   // 点击删除（长按或右键先不做，先简单点：点 item 删除）
   list.addEventListener('click', (e) => {
-    const item = (e.target as HTMLElement).closest('.view-countdown-item');
+    const item = (e.target as HTMLElement).closest('.view-countdown-item') as HTMLElement | null;
     if (!item) return;
     const id = item.dataset.id;
     if (id && confirm('删除这个倒数日？')) {

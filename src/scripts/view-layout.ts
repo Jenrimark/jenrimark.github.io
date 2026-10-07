@@ -270,14 +270,14 @@ export function initViewLayout() {
 
     let targetTile: HTMLElement | null = null;
     const tiles = grid.querySelectorAll<HTMLElement>('[data-tile]');
-    tiles.forEach((tile) => {
-      if (tile === dragEl) return;
-      if (tile.style.display === 'none') return;
+    for (const tile of Array.from(tiles)) {
+      if (tile === dragEl) continue;
+      if (tile.style.display === 'none') continue;
       const rect = tile.getBoundingClientRect();
       if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
         targetTile = tile;
       }
-    });
+    }
 
     if (hoverTile && hoverTile !== targetTile) hoverTile.classList.remove('drag-hover');
     if (targetTile && !CORE_TILES.includes(targetTile.dataset.tile || '')) {

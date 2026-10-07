@@ -1061,6 +1061,13 @@ html[data-view-theme='dark'] .view-btn--accent {
   display: none !important;
 }
 
+.view-links-panel__title {
+  margin: 0 0 0.85rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--view-text);
+}
+
 /* 面板遮罩层 */
 .view-links-overlay {
   position: fixed;

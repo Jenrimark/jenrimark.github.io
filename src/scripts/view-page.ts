@@ -196,6 +196,7 @@ function initLinks() {
   const errorEl = document.getElementById('view-link-error');
   const iconPreview = document.getElementById('view-link-icon-preview') as HTMLImageElement | null;
   const iconText = document.getElementById('view-link-icon-text');
+  const iconConfirm = document.getElementById('view-link-icon-confirm') as HTMLButtonElement | null;
   const iconUpload = document.getElementById('view-link-icon-upload') as HTMLButtonElement | null;
   const iconReset = document.getElementById('view-link-icon-reset') as HTMLButtonElement | null;
   const iconFile = document.getElementById('view-link-icon-file') as HTMLInputElement | null;
@@ -203,6 +204,10 @@ function initLinks() {
   if (!container || !panel || !form || !urlInput || !errorEl) return;
 
   let pendingIcon: string | null = null;
+  /** 用户点击"使用此图标"确认后的自动抓取图标（提交时固化到链接） */
+  let confirmedIcon: string | null = null;
+  /** 递增令牌：URL 变化后丢弃在途的头像确认结果 */
+  let resolveToken = 0;
 
   const refresh = () => {
     renderLinks(container, getLinks());
@@ -210,7 +215,7 @@ function initLinks() {
   };
 
   const previewAutoIcon = () => {
-    if (!iconPreview || !iconText) return;
+    if (!iconPreview || !iconText || !iconConfirm) return;
     const normalized = normalizeUrl(urlInput.value);
     if (!normalized) {
       previewIcon();
@@ -221,18 +226,34 @@ function initLinks() {
     iconPreview.onerror = () => {
       iconPreview.hidden = true;
       iconPreview.onerror = null;
+      if (iconConfirm) iconConfirm.hidden = true;
     };
     iconText.textContent = `自动捕捉：${new URL(normalized).hostname}`;
+    iconConfirm.hidden = false;
+    iconConfirm.disabled = false;
+    iconConfirm.textContent = '使用此图标';
+    // 存在固定图标（上传 / 已确认）时才提供"恢复自动"
+    if (iconReset) iconReset.hidden = !(pendingIcon || confirmedIcon);
   };
 
   const previewIcon = () => {
-    if (!iconPreview || !iconText) return;
+    if (!iconPreview || !iconText || !iconConfirm) return;
     if (pendingIcon) {
       iconPreview.src = pendingIcon;
       iconPreview.hidden = false;
       iconPreview.onerror = null;
       iconText.textContent = '已使用上传的自定义图标';
       if (iconReset) iconReset.hidden = false;
+      iconConfirm.hidden = true;
+      return;
+    }
+    if (confirmedIcon) {
+      iconPreview.src = confirmedIcon;
+      iconPreview.hidden = false;
+      iconPreview.onerror = null;
+      iconText.textContent = '已确认网站图标';
+      if (iconReset) iconReset.hidden = false;
+      iconConfirm.hidden = true;
       return;
     }
     iconPreview.hidden = true;
@@ -240,6 +261,36 @@ function initLinks() {
     iconPreview.onerror = null;
     iconText.textContent = '自动捕捉网站图标';
     if (iconReset) iconReset.hidden = true;
+    iconConfirm.hidden = true;
+    iconConfirm.disabled = false;
+    iconConfirm.textContent = '使用此图标';
+  };
+
+  /** 点击"使用此图标"：加载验证自动抓取的图标，确认后固化到链接 */
+  const confirmAutoIcon = () => {
+    if (!iconPreview || !iconText || !iconConfirm) return;
+    const normalized = normalizeUrl(urlInput.value);
+    if (!normalized) return;
+    const src = faviconSrcForRender(normalized);
+    const token = ++resolveToken;
+    iconConfirm.disabled = true;
+    iconConfirm.textContent = '获取中…';
+    const probe = new Image();
+    probe.onload = () => {
+      if (token !== resolveToken || panel.hidden) return; // URL 已变化或面板已关闭，丢弃过期结果
+      confirmedIcon = src;
+      errorEl.hidden = true;
+      previewIcon();
+    };
+    probe.onerror = () => {
+      if (token !== resolveToken || panel.hidden) return;
+      iconConfirm.disabled = false;
+      iconConfirm.textContent = '使用此图标';
+      iconText.textContent = '自动图标获取失败';
+      errorEl.textContent = '自动图标获取失败，可上传图片或稍后重试。';
+      errorEl.hidden = false;
+    };
+    probe.src = src;
   };
 
   const resetForm = () => {
@@ -247,6 +298,8 @@ function initLinks() {
     if (urlInput) urlInput.value = '';
     errorEl.hidden = true;
     pendingIcon = null;
+    confirmedIcon = null;
+    resolveToken += 1;
     previewIcon();
   };
 
@@ -284,12 +337,17 @@ function initLinks() {
   document.addEventListener('click', (e) => {
     if (panel.hidden) return;
     const target = e.target as Node;
-    if (!panel.contains(target) && !addBtn.contains(target)) close();
+    if (!panel.contains(target) && !addBtn?.contains(target)) close();
   });
 
   urlInput.addEventListener('input', () => {
     errorEl.hidden = true;
+    resolveToken += 1;
     if (pendingIcon) return;
+    if (confirmedIcon) {
+      // URL 已变化，之前确认的图标不再适用于新网址，回到"待确认"状态
+      confirmedIcon = null;
+    }
     previewAutoIcon();
   });
 
@@ -310,11 +368,13 @@ function initLinks() {
         title = url;
       }
     }
-    addLink({ title, url, icon: pendingIcon ?? undefined });
+    addLink({ title, url, icon: pendingIcon ?? confirmedIcon ?? undefined });
     resetForm();
     close();
     refresh();
   });
+
+  iconConfirm?.addEventListener('click', confirmAutoIcon);
 
   iconUpload?.addEventListener('click', () => iconFile?.click());
 
@@ -347,6 +407,7 @@ function initLinks() {
 
   iconReset?.addEventListener('click', () => {
     pendingIcon = null;
+    confirmedIcon = null;
     errorEl.hidden = true;
     previewAutoIcon();
   });
