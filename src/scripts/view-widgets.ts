@@ -155,6 +155,7 @@ function initIPInfo() {
         };
 
         script.src = `https://whois.pconline.com.cn/ipJson.jsp?json=true&callback=${cb}`;
+        script.charset = 'GBK'; // 接口返回GBK编码，必须指定否则中文乱码
         script.onerror = () => { cleanup(); reject(new Error('network')); };
         document.body.appendChild(script);
       });
