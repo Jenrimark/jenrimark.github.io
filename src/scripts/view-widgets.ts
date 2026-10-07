@@ -1,5 +1,11 @@
 /** 新增小组件：音乐播放器、IP信息、快捷翻译、二维码生成 */
 
+// Cloudflare Worker 代理地址（解决国内访问国外 API 的跨域和网络问题）
+const PROXY_BASE = 'https://aged-darkness-4669.jenrimark.workers.dev';
+function proxyUrl(targetUrl: string): string {
+  return `${PROXY_BASE}/?url=${encodeURIComponent(targetUrl)}`;
+}
+
 // ==================== 音乐播放器 ====================
 function initMusicPlayer() {
   const audio = document.getElementById('view-music-audio') as HTMLAudioElement | null;
@@ -200,7 +206,8 @@ function initTranslate() {
     try {
       const from = langMap[fromSel.value] || 'autodetect';
       const to = langMap[toSel.value] || 'en';
-      const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`);
+      const target = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`;
+      const res = await fetch(proxyUrl(target));
       const data = await res.json();
       if (data.responseStatus === 200 && data.responseData) {
         resultEl.textContent = data.responseData.translatedText;

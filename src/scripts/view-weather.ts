@@ -1,5 +1,11 @@
 /** 天气组件：顶栏 pill + 详情卡片，Open-Meteo 免费 API */
 
+// Cloudflare Worker 代理地址
+const PROXY_BASE = 'https://aged-darkness-4669.jenrimark.workers.dev';
+function proxyUrl(targetUrl: string): string {
+  return `${PROXY_BASE}/?url=${encodeURIComponent(targetUrl)}`;
+}
+
 const STORAGE_WEATHER = 'view:weather';
 const STORAGE_WEATHER_CACHE = 'view:weather-cache';
 const STORAGE_GEO = 'view:geo-cache';
@@ -44,8 +50,8 @@ function saveCache(data: WeatherData) {
 }
 
 async function fetchWeather(lat: number, lon: number): Promise<WeatherData> {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`;
-  const res = await fetch(url);
+  const target = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`;
+  const res = await fetch(proxyUrl(target));
   if (!res.ok) throw new Error('weather fetch failed');
   const json = await res.json();
   return {
