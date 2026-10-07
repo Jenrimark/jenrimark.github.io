@@ -5,9 +5,9 @@ import {
   type SearchEngineId,
 } from '../data/view-search';
 import { MAX_ICON_SIZE, type ViewLink } from '../data/view-links';
-import { faviconSrcForRender, hydrateFaviconImages, initFaviconRetryOnVisible } from './favicon-cache';
+import { faviconSrcForRender, hydrateFaviconImages, initFaviconRetryOnVisible, resolveFavicon } from './favicon-cache';
 import { initSearchAutocomplete, saveRecentQuery } from './view-autocomplete';
-import { getLinks, addLink, removeLink } from './view-links-state';
+import { getLinks, addLink, removeLink, updateLink } from './view-links-state';
 import { initViewBackground } from './view-background';
 import { initViewTheme } from './view-theme';
 import { initViewClock } from './view-clock';
@@ -161,6 +161,7 @@ function renderLinks(container: HTMLElement, links: ViewLink[]) {
       const faviconAttrs = customIcon ? '' : ' data-favicon data-favicon-state="pending"';
       return `
       <div class="view-icon-tile" data-id="${escapeAttr(link.id)}">
+        <button type="button" class="view-icon-tile__edit" data-edit-id="${escapeAttr(link.id)}" aria-label="编辑 ${escapeAttr(link.title)}" title="编辑">✎</button>
         <a class="view-icon-tile__link" href="${escapeAttr(link.url)}" target="_blank" rel="noopener noreferrer">
           <div class="view-icon-tile__icon">
             <img src="${escapeAttr(iconSrc)}"${faviconAttrs} alt="" width="28" height="28" decoding="async" referrerpolicy="no-referrer" />
@@ -196,13 +197,24 @@ function initLinks() {
   const errorEl = document.getElementById('view-link-error');
   const iconPreview = document.getElementById('view-link-icon-preview') as HTMLImageElement | null;
   const iconText = document.getElementById('view-link-icon-text');
+  const iconConfirm = document.getElementById('view-link-icon-confirm') as HTMLButtonElement | null;
   const iconUpload = document.getElementById('view-link-icon-upload') as HTMLButtonElement | null;
   const iconReset = document.getElementById('view-link-icon-reset') as HTMLButtonElement | null;
   const iconFile = document.getElementById('view-link-icon-file') as HTMLInputElement | null;
+  const panelTitle = document.getElementById('view-link-panel-title');
+  const submitBtn = document.getElementById('view-link-submit');
   const cancelBtn = document.getElementById('view-link-cancel');
   if (!container || !panel || !form || !urlInput || !errorEl) return;
 
   let pendingIcon: string | null = null;
+  /** 用户点击"使用此图标"确认后的自动抓取图标（固化，更换链接时不自动覆盖） */
+  let confirmedIcon: string | null = null;
+  /** 编辑态：用户点了"恢复自动"，需要清除原固定图标 */
+  let iconRemoved = false;
+  /** 正在编辑的链接 id；null 表示新增 */
+  let editingId: string | null = null;
+  /** 递增令牌：URL/表单变化后丢弃在途的头像解析结果 */
+  let resolveToken = 0;
 
   const refresh = () => {
     renderLinks(container, getLinks());
@@ -210,7 +222,7 @@ function initLinks() {
   };
 
   const previewAutoIcon = () => {
-    if (!iconPreview || !iconText) return;
+    if (!iconPreview || !iconText || !iconConfirm || !iconReset) return;
     const normalized = normalizeUrl(urlInput.value);
     if (!normalized) {
       previewIcon();
@@ -223,23 +235,67 @@ function initLinks() {
       iconPreview.onerror = null;
     };
     iconText.textContent = `自动捕捉：${new URL(normalized).hostname}`;
+    iconConfirm.hidden = false;
+    iconConfirm.disabled = false;
+    iconConfirm.textContent = '使用此图标';
+    // 存在固定图标（上传 / 已确认 / 编辑中的原图标）时才提供"恢复自动"
+    const editingLink = editingId ? getLinks().find((l) => l.id === editingId) : undefined;
+    iconReset.hidden = !(pendingIcon || confirmedIcon || editingLink?.icon);
   };
 
   const previewIcon = () => {
-    if (!iconPreview || !iconText) return;
+    if (!iconPreview || !iconText || !iconConfirm || !iconReset) return;
     if (pendingIcon) {
       iconPreview.src = pendingIcon;
       iconPreview.hidden = false;
       iconPreview.onerror = null;
       iconText.textContent = '已使用上传的自定义图标';
-      if (iconReset) iconReset.hidden = false;
+      iconReset.hidden = false;
+      iconConfirm.hidden = true;
+      return;
+    }
+    if (confirmedIcon) {
+      iconPreview.src = confirmedIcon;
+      iconPreview.hidden = false;
+      iconPreview.onerror = null;
+      iconText.textContent = '已确认网站图标，更换链接时不会被自动覆盖';
+      iconReset.hidden = false;
+      iconConfirm.hidden = true;
       return;
     }
     iconPreview.hidden = true;
     iconPreview.removeAttribute('src');
     iconPreview.onerror = null;
     iconText.textContent = '自动捕捉网站图标';
-    if (iconReset) iconReset.hidden = true;
+    iconReset.hidden = true;
+    iconConfirm.hidden = true;
+    iconConfirm.disabled = false;
+    iconConfirm.textContent = '使用此图标';
+  };
+
+  /** 点击"使用此图标"：解析并确认当前网址的自动图标，固化后不再随链接变化覆盖 */
+  const confirmAutoIcon = () => {
+    if (!iconPreview || !iconText || !iconConfirm) return;
+    const normalized = normalizeUrl(urlInput.value);
+    if (!normalized) return;
+    const token = ++resolveToken;
+    iconConfirm.disabled = true;
+    iconConfirm.textContent = '获取中…';
+    resolveFavicon(normalized).then((src) => {
+      if (token !== resolveToken || panel.hidden) return; // URL/表单已变化或面板已关闭，丢弃过期结果
+      iconConfirm.disabled = false;
+      iconConfirm.textContent = '使用此图标';
+      if (!src) {
+        iconText.textContent = '自动图标获取失败';
+        errorEl.textContent = '自动图标获取失败，可上传图片或稍后重试。';
+        errorEl.hidden = false;
+        return;
+      }
+      confirmedIcon = src;
+      iconRemoved = false;
+      errorEl.hidden = true;
+      previewIcon();
+    });
   };
 
   const resetForm = () => {
@@ -247,7 +303,13 @@ function initLinks() {
     if (urlInput) urlInput.value = '';
     errorEl.hidden = true;
     pendingIcon = null;
+    confirmedIcon = null;
+    iconRemoved = false;
+    editingId = null;
+    resolveToken += 1;
     previewIcon();
+    if (panelTitle) panelTitle.textContent = '添加快捷链接';
+    if (submitBtn) submitBtn.textContent = '添加';
   };
 
   const open = () => {
@@ -255,6 +317,34 @@ function initLinks() {
     if (overlay) overlay.hidden = false;
     document.getElementById('view-link-add')?.setAttribute('aria-expanded', 'true');
     titleInput?.focus();
+  };
+
+  const openEdit = (id: string) => {
+    const link = getLinks().find((l) => l.id === id);
+    if (!link || !iconPreview || !iconText || !iconConfirm || !iconReset) return;
+    editingId = id;
+    if (titleInput) titleInput.value = link.title;
+    if (urlInput) urlInput.value = link.url;
+    pendingIcon = null;
+    confirmedIcon = null;
+    iconRemoved = false;
+    resolveToken += 1;
+    errorEl.hidden = true;
+    if (link.icon) {
+      iconPreview.src = link.icon;
+      iconPreview.hidden = false;
+      iconPreview.onerror = null;
+      iconText.textContent = '已固定当前图标，更换链接后需要重新确认才会替换';
+      iconReset.hidden = false;
+      iconConfirm.hidden = true;
+      iconConfirm.disabled = false;
+      iconConfirm.textContent = '使用此图标';
+    } else {
+      previewAutoIcon();
+    }
+    if (panelTitle) panelTitle.textContent = '编辑快捷链接';
+    if (submitBtn) submitBtn.textContent = '保存';
+    open();
   };
 
   const close = () => {
@@ -267,12 +357,24 @@ function initLinks() {
 
   container.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
-    if (!target.closest('#view-link-add')) return;
-    if (panel.hidden) {
-      resetForm();
-      open();
-    } else {
-      close();
+    if (target.closest('#view-link-add')) {
+      if (panel.hidden) {
+        resetForm();
+        open();
+      } else {
+        close();
+      }
+      return;
+    }
+    const editBtn = target.closest<HTMLButtonElement>('.view-icon-tile__edit');
+    if (editBtn && editBtn.dataset.editId) {
+      openEdit(editBtn.dataset.editId);
+      return;
+    }
+    const removeBtn = target.closest<HTMLButtonElement>('.view-icon-tile__remove');
+    if (removeBtn && removeBtn.dataset.removeId) {
+      removeLink(removeBtn.dataset.removeId);
+      refresh();
     }
   });
 
@@ -289,7 +391,13 @@ function initLinks() {
 
   urlInput.addEventListener('input', () => {
     errorEl.hidden = true;
+    resolveToken += 1;
     if (pendingIcon) return;
+    if (confirmedIcon) {
+      // URL 已变化，之前确认的图标不再适用于新网址，回到"待确认"状态
+      confirmedIcon = null;
+      iconRemoved = false;
+    }
     previewAutoIcon();
   });
 
@@ -310,11 +418,18 @@ function initLinks() {
         title = url;
       }
     }
-    addLink({ title, url, icon: pendingIcon ?? undefined });
+    const icon = pendingIcon ?? confirmedIcon ?? (iconRemoved ? null : undefined);
+    if (editingId) {
+      updateLink(editingId, { title, url, icon });
+    } else {
+      addLink({ title, url, icon: icon ?? undefined });
+    }
     resetForm();
     close();
     refresh();
   });
+
+  iconConfirm?.addEventListener('click', confirmAutoIcon);
 
   iconUpload?.addEventListener('click', () => iconFile?.click());
 
@@ -335,6 +450,7 @@ function initLinks() {
     const reader = new FileReader();
     reader.onload = () => {
       pendingIcon = reader.result as string;
+      iconRemoved = false;
       errorEl.hidden = true;
       previewIcon();
     };
@@ -347,17 +463,10 @@ function initLinks() {
 
   iconReset?.addEventListener('click', () => {
     pendingIcon = null;
+    confirmedIcon = null;
+    iconRemoved = true;
     errorEl.hidden = true;
     previewAutoIcon();
-  });
-
-  container.addEventListener('click', (e) => {
-    const btn = (e.target as Element).closest<HTMLButtonElement>('.view-icon-tile__remove');
-    if (!btn) return;
-    const id = btn.dataset.removeId;
-    if (!id) return;
-    removeLink(id);
-    refresh();
   });
 
   refresh();

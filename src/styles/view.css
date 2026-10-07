@@ -1057,6 +1057,13 @@ html[data-view-theme='dark'] .view-btn--accent {
   border-radius: 16px;
 }
 
+.view-links-panel__title {
+  margin: 0 0 0.85rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--view-text);
+}
+
 .view-links-panel[hidden] {
   display: none !important;
 }
@@ -1522,6 +1529,31 @@ html[data-view-theme='dark'] .view-big-clock {
 
 .view-icon-tile:hover .view-icon-tile__remove,
 .view-icon-tile__remove:focus-visible {
+  opacity: 1;
+}
+
+.view-icon-tile__edit {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  display: grid;
+  place-items: center;
+}
+
+.view-icon-tile:hover .view-icon-tile__edit,
+.view-icon-tile__edit:focus-visible {
   opacity: 1;
 }
 

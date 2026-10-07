@@ -259,6 +259,7 @@ import { searchEngines } from '../data/view-search';
 
     <!-- 添加链接面板（弹层） -->
     <div id="view-links-panel" class="view-links-panel view-glass view-glass--panel" hidden>
+      <p class="view-links-panel__title" id="view-link-panel-title">添加快捷链接</p>
       <form id="view-link-form" class="view-link-form" novalidate>
         <div class="view-link-form__row">
           <label class="view-link-form__label" for="view-link-title">标题</label>
@@ -276,6 +277,7 @@ import { searchEngines } from '../data/view-search';
             </span>
             <span class="view-link-iconbox__text" id="view-link-icon-text">自动捕捉网站图标</span>
             <span class="view-link-iconbox__actions">
+              <button type="button" id="view-link-icon-confirm" class="view-link-action" hidden>使用此图标</button>
               <button type="button" id="view-link-icon-upload" class="view-link-action">上传图片</button>
               <button type="button" id="view-link-icon-reset" class="view-link-action" hidden>恢复自动</button>
             </span>
@@ -285,7 +287,7 @@ import { searchEngines } from '../data/view-search';
         <p id="view-link-error" class="view-link-form__error" role="alert" hidden></p>
         <div class="view-link-form__actions">
           <button type="button" id="view-link-cancel" class="view-btn">取消</button>
-          <button type="submit" class="view-btn view-btn--accent">添加</button>
+          <button type="submit" id="view-link-submit" class="view-btn view-btn--accent">添加</button>
         </div>
       </form>
     </div>

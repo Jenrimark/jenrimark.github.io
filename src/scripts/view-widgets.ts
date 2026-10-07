@@ -1,11 +1,5 @@
 /** 新增小组件：音乐播放器、IP信息、快捷翻译、二维码生成 */
 
-// 云服务器 Nginx 反向代理前缀（解决国内访问国外 API 的跨域和网络问题）
-const PROXY_BASE = '/proxy';
-function proxyUrl(targetPath: string): string {
-  return `${PROXY_BASE}${targetPath}`;
-}
-
 // ==================== 音乐播放器 ====================
 function initMusicPlayer() {
   const audio = document.getElementById('view-music-audio') as HTMLAudioElement | null;
@@ -122,42 +116,79 @@ function initIPInfo() {
 
   const fetchIP = () => {
     content.innerHTML = '<span style="font-size:0.82rem;color:var(--view-text-muted);">加载中…</span>';
-    // 用搜狐 JSONP 接口，不受跨域限制
-    const script = document.createElement('script');
-    script.src = 'https://pv.sohu.com/cityjson?ie=utf-8';
-    script.onload = () => {
+
+    // 检测是否为内网/保留 IP，这类结果不缓存
+    const isPrivateIP = (ip: string): boolean => {
+      if (!ip) return true;
+      return /^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|0\.|::1|fe80:)/i.test(ip);
+    };
+
+    // 搜狐 JSONP 接口（国内可访问，不受跨域限制）
+    const fetchSohu = (): Promise<{ ip: string; city: string }> => {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://pv.sohu.com/cityjson?ie=utf-8';
+        const timer = setTimeout(() => { script.remove(); reject(new Error('timeout')); }, 8000);
+        script.onload = () => {
+          clearTimeout(timer);
+          try {
+            const data = (window as any).returnCitySN;
+            if (data && data.cip) {
+              resolve({ ip: data.cip, city: data.cname || '' });
+            } else {
+              reject(new Error('no data'));
+            }
+          } catch { reject(new Error('parse error')); }
+          script.remove();
+        };
+        script.onerror = () => { clearTimeout(timer); script.remove(); reject(new Error('network')); };
+        document.body.appendChild(script);
+      });
+    };
+
+    // 备用：ipify + 本地解析（仅获取 IP，地区留空）
+    const fetchIpify = (): Promise<{ ip: string; city: string }> => {
+      return fetch('https://api.ipify.org?format=json')
+        .then(r => r.json())
+        .then(d => ({ ip: d.ip, city: '' }));
+    };
+
+    const doFetch = async () => {
       try {
-        const data = (window as any).returnCitySN;
-        if (data && data.cip) {
-          const result = {
-            ip: data.cip,
-            pro: '',
-            city: data.cname || '',
-            isp: '--',
-          };
-          localStorage.setItem(CACHE_KEY, JSON.stringify({ data: result, time: Date.now() }));
-          render(result);
-        } else {
-          content.innerHTML = '<span style="font-size:0.82rem;color:#ff453a;">获取失败</span>';
+        let result = await fetchSohu();
+        // 搜狐返回内网 IP 时用备用接口
+        if (isPrivateIP(result.ip)) {
+          result = await fetchIpify();
         }
+        if (isPrivateIP(result.ip)) {
+          content.innerHTML = '<span style="font-size:0.82rem;color:#ff453a;">获取失败（内网环境）</span>';
+          return;
+        }
+        const data = { ip: result.ip, pro: '', city: result.city, isp: '--' };
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ data, time: Date.now() }));
+        render(data);
       } catch {
-        content.innerHTML = '<span style="font-size:0.82rem;color:#ff453a;">解析失败</span>';
+        content.innerHTML = '<span style="font-size:0.82rem;color:#ff453a;">网络请求失败</span>';
       }
-      script.remove();
     };
-    script.onerror = () => {
-      content.innerHTML = '<span style="font-size:0.82rem;color:#ff453a;">网络请求失败</span>';
-      script.remove();
-    };
-    document.body.appendChild(script);
+
+    doFetch();
   };
 
-  // 先读缓存
+  // 先读缓存（内网 IP 不缓存，直接重新获取）
+  const isPrivateIP = (ip: string): boolean => {
+    if (!ip) return true;
+    return /^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|0\.|::1|fe80:)/i.test(ip);
+  };
+
   try {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       const { data, time } = JSON.parse(cached);
-      if (Date.now() - time < CACHE_TTL) {
+      if (isPrivateIP(data.ip)) {
+        localStorage.removeItem(CACHE_KEY);
+        fetchIP();
+      } else if (Date.now() - time < CACHE_TTL) {
         render(data);
       } else {
         fetchIP();
@@ -206,7 +237,7 @@ function initTranslate() {
     try {
       const from = langMap[fromSel.value] || 'autodetect';
       const to = langMap[toSel.value] || 'en';
-      const res = await fetch(proxyUrl(`/translate/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`));
+      const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`);
       const data = await res.json();
       if (data.responseStatus === 200 && data.responseData) {
         resultEl.textContent = data.responseData.translatedText;

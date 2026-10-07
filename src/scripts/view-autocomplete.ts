@@ -277,8 +277,9 @@ export function initSearchAutocomplete({
     const recent = matchRecent(query);
     let engineSuggest: string[] = [];
     if (query.trim()) {
-      // 统一用百度搜索建议（国内稳定，Google建议DNS被污染）
-      engineSuggest = await fetchBaiduSuggestions(query);
+      engineSuggest = isGoogle()
+        ? await fetchGoogleSuggestions(query)
+        : await fetchBaiduSuggestions(query);
     }
 
     if (id !== requestId) return;
