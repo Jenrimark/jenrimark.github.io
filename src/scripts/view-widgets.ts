@@ -108,24 +108,35 @@ function initIPInfo() {
 
   const render = (data: any) => {
     content.innerHTML = `
-      <div class="view-ipinfo__row"><span class="view-ipinfo__label">IP</span><span class="view-ipinfo__value">${data.query || '--'}</span></div>
-      <div class="view-ipinfo__row"><span class="view-ipinfo__label">地区</span><span class="view-ipinfo__value">${data.country || ''} ${data.regionName || ''} ${data.city || ''}</span></div>
+      <div class="view-ipinfo__row"><span class="view-ipinfo__label">IP</span><span class="view-ipinfo__value">${data.ip || '--'}</span></div>
+      <div class="view-ipinfo__row"><span class="view-ipinfo__label">地区</span><span class="view-ipinfo__value">${data.pro || ''} ${data.city || ''}</span></div>
       <div class="view-ipinfo__row"><span class="view-ipinfo__label">运营商</span><span class="view-ipinfo__value">${data.isp || '--'}</span></div>
-      <div class="view-ipinfo__row"><span class="view-ipinfo__label">经纬度</span><span class="view-ipinfo__value">${data.lat ? data.lat.toFixed(2) : '--'}, ${data.lon ? data.lon.toFixed(2) : '--'}</span></div>
-      <div class="view-ipinfo__row"><span class="view-ipinfo__label">时区</span><span class="view-ipinfo__value">${data.timezone || '--'}</span></div>
     `;
   };
 
   const fetchIP = async () => {
     content.innerHTML = '<span style="font-size:0.82rem;color:var(--view-text-muted);">加载中…</span>';
     try {
-      const res = await fetch('http://ip-api.com/json/?lang=zh-CN&fields=status,message,country,regionName,city,isp,lat,lon,timezone,query');
-      const data = await res.json();
-      if (data.status === 'success') {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ data, time: Date.now() }));
-        render(data);
+      const res = await fetch('https://whois.pconline.com.cn/ipJson.jsp?json=true');
+      const text = await res.text();
+      // 接口返回可能是 JSONP 或纯 JSON，提取 JSON 部分
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('invalid response');
+      const data = JSON.parse(jsonMatch[0]);
+      if (data.ip) {
+        // 从 addr 字段提取运营商
+        const addr = data.addr || '';
+        const ispMatch = addr.match(/ (电信|联通|移动|铁通|广电|教育网)/);
+        const result = {
+          ip: data.ip,
+          pro: data.pro || '',
+          city: data.city || '',
+          isp: ispMatch ? ispMatch[1] : (addr.split(' ').pop() || '--'),
+        };
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ data: result, time: Date.now() }));
+        render(result);
       } else {
-        content.innerHTML = `<span style="font-size:0.82rem;color:#ff453a;">获取失败：${data.message || '未知错误'}</span>`;
+        content.innerHTML = `<span style="font-size:0.82rem;color:#ff453a;">获取失败</span>`;
       }
     } catch {
       content.innerHTML = '<span style="font-size:0.82rem;color:#ff453a;">网络请求失败</span>';
