@@ -98,6 +98,11 @@ function initMusicPlayer() {
 }
 
 // ==================== IP信息 ====================
+// 主数据源：IP-API.com 免费版
+// https://ip-api.com/docs/api:json — 无 key，JSONP/CORS，45 次/分钟，仅 HTTP
+// lang=zh-CN 输出中文省市；X-Rl / X-Ttl 用于客户端限流
+// 线上 HTTPS 走 Nginx 同源反代 /proxy/ip-api/（见 deploy/nginx/ip-api-proxy.conf）
+// 反代不可用时：HTTP 页直连免费 API，HTTPS 页回落国内接口
 function initIPInfo() {
   const content = document.getElementById('view-ipinfo-content');
   const refreshBtn = document.getElementById('view-ipinfo-refresh');
@@ -105,21 +110,91 @@ function initIPInfo() {
 
   const CACHE_KEY = 'view:ipinfo';
   const CACHE_TTL = 24 * 60 * 60 * 1000;
+  const RL_KEY = 'view:ipinfo:rl';
+  // 只请求展示用到的字段，降低体积
+  const IP_API_FIELDS =
+    'status,message,query,country,regionName,city,isp,org,as,timezone,offset,mobile,proxy,hosting';
+  // Nginx 反代前缀（与 view-autocomplete 的 /proxy 约定一致）
+  const IP_API_PROXY = '/proxy/ip-api/json/';
 
-  const render = (data: any) => {
-    content.innerHTML = `
-      <div class="view-ipinfo__row"><span class="view-ipinfo__label">IP</span><span class="view-ipinfo__value">${data.ip || '--'}</span></div>
-      <div class="view-ipinfo__row"><span class="view-ipinfo__label">地区</span><span class="view-ipinfo__value">${data.region || '--'}</span></div>
-      <div class="view-ipinfo__row"><span class="view-ipinfo__label">运营商</span><span class="view-ipinfo__value">${data.isp || '未知'}</span></div>
-    `;
+  type IPInfo = {
+    ip: string;
+    region: string;
+    isp: string;
+    timezone?: string;
+    offset?: number;
+    as?: string;
+    mobile?: boolean;
+    proxy?: boolean;
+    hosting?: boolean;
+    source?: 'ip-api' | 'pconline' | 'ipify';
   };
 
-  // 从完整地址中提取运营商
-  const extractISP = (addr: string): string => {
-    if (!addr) return '';
-    const isps = ['电信', '联通', '移动', '铁通', '广电', '长城宽带', '鹏博士', '教育网', '科技网'];
-    for (const isp of isps) {
-      if (addr.includes(isp)) return isp;
+  const escapeHtml = (s: string): string =>
+    String(s ?? '').replace(/[&<>"']/g, (c) => {
+      switch (c) {
+        case '&': return '&amp;';
+        case '<': return '&lt;';
+        case '>': return '&gt;';
+        case '"': return '&quot;';
+        default: return '&#39;';
+      }
+    });
+
+  const formatOffset = (seconds?: number): string => {
+    if (typeof seconds !== 'number' || !isFinite(seconds)) return '';
+    const sign = seconds >= 0 ? '+' : '-';
+    const abs = Math.abs(seconds);
+    const h = Math.floor(abs / 3600);
+    const m = Math.floor((abs % 3600) / 60);
+    return m ? `UTC${sign}${h}:${String(m).padStart(2, '0')}` : `UTC${sign}${h}`;
+  };
+
+  const render = (data: IPInfo) => {
+    const rows: Array<[string, string]> = [
+      ['IP', data.ip],
+      ['地区', data.region],
+      ['运营商', data.isp || '未知'],
+    ];
+    if (data.timezone) {
+      const offset = formatOffset(data.offset);
+      rows.push(['时区', offset ? `${data.timezone} (${offset})` : data.timezone]);
+    }
+    if (data.as) rows.push(['AS', data.as]);
+
+    const tags: string[] = [];
+    if (data.mobile) tags.push('移动网络');
+    if (data.proxy) tags.push('代理/VPN');
+    if (data.hosting) tags.push('机房');
+
+    content.innerHTML =
+      rows
+        .map(
+          ([label, value]) =>
+            `<div class="view-ipinfo__row"><span class="view-ipinfo__label">${label}</span><span class="view-ipinfo__value" title="${escapeHtml(value)}">${escapeHtml(value) || '--'}</span></div>`
+        )
+        .join('') +
+      (tags.length
+        ? `<div class="view-ipinfo__tags">${tags.map((t) => `<span class="view-ipinfo__tag${t === '代理/VPN' ? ' view-ipinfo__tag--warn' : ''}">${escapeHtml(t)}</span>`).join('')}</div>`
+        : '');
+  };
+
+  // 从完整地址 / ISP 文本中提取运营商（兼容中英文）
+  const extractISP = (text: string): string => {
+    if (!text) return '';
+    const rules: Array<[RegExp, string]> = [
+      [/电信|CHINANET|TELECOM|China Telecom/i, '电信'],
+      [/联通|UNICOM|China Unicom/i, '联通'],
+      [/移动|CMCC|China Mobile/i, '移动'],
+      [/铁通|Tietong/i, '铁通'],
+      [/广电|Broadcast|China Broadcasting/i, '广电'],
+      [/长城宽带|GreatWall/i, '长城宽带'],
+      [/鹏博士|Dr\.?\s*Peng/i, '鹏博士'],
+      [/教育网|CERNET/i, '教育网'],
+      [/科技网|CSTNET/i, '科技网'],
+    ];
+    for (const [re, name] of rules) {
+      if (re.test(text)) return name;
     }
     return '';
   };
@@ -132,53 +207,178 @@ function initIPInfo() {
     return region;
   };
 
+  // ---- 免费版限流：X-Rl=0 时按 X-Ttl 暂停请求 ----
+  const isRateLimited = (): boolean => {
+    try {
+      const raw = localStorage.getItem(RL_KEY);
+      if (!raw) return false;
+      const { until } = JSON.parse(raw) as { until: number };
+      return typeof until === 'number' && Date.now() < until;
+    } catch {
+      return false;
+    }
+  };
+
+  const noteRateLimit = (res: Response) => {
+    try {
+      const rl = res.headers.get('X-Rl');
+      const ttl = res.headers.get('X-Ttl');
+      if (rl !== null && Number(rl) <= 0) {
+        const seconds = Number(ttl) || 60;
+        localStorage.setItem(RL_KEY, JSON.stringify({ until: Date.now() + seconds * 1000 }));
+      } else {
+        localStorage.removeItem(RL_KEY);
+      }
+    } catch { /* ignore */ }
+  };
+
+  const mapIpApi = (data: any): IPInfo => {
+    const ispRaw = data.isp || data.org || '';
+    return {
+      ip: data.query,
+      region: [data.country, data.regionName, data.city].filter(Boolean).join(' · '),
+      isp: extractISP(ispRaw) || ispRaw,
+      timezone: data.timezone || '',
+      offset: typeof data.offset === 'number' ? data.offset : undefined,
+      as: data.as || '',
+      mobile: !!data.mobile,
+      proxy: !!data.proxy,
+      hosting: !!data.hosting,
+      source: 'ip-api',
+    };
+  };
+
+  // IP-API.com：先同源 Nginx 反代（HTTPS 线上可用），再免费版直连
+  const ipApiEndpoints = (): string[] => {
+    const qs = `lang=zh-CN&fields=${IP_API_FIELDS}`;
+    const list = [`${IP_API_PROXY}?${qs}`];
+    if (location.protocol === 'http:' || location.protocol === 'file:') {
+      list.push(`http://ip-api.com/json/?${qs}`);
+    }
+    return list;
+  };
+
+  const fetchIpApiJson = async (url: string): Promise<IPInfo> => {
+    const res = await fetch(url, { method: 'GET' });
+    noteRateLimit(res);
+    if (res.status === 429) throw new Error('rate limited');
+    if (!res.ok) throw new Error(`http ${res.status}`);
+    const data = await res.json();
+    if (!data || data.status !== 'success' || !data.query) {
+      throw new Error(data?.message || 'ip-api fail');
+    }
+    return mapIpApi(data);
+  };
+
+  const fetchIpApiJsonp = (url: string): Promise<IPInfo> => {
+    return new Promise((resolve, reject) => {
+      const cb = `_ipapicb_${Date.now().toString(36)}`;
+      const script = document.createElement('script');
+      const timer = setTimeout(() => { cleanup(); reject(new Error('ip-api timeout')); }, 8000);
+
+      const cleanup = () => {
+        clearTimeout(timer);
+        delete (window as any)[cb];
+        script.remove();
+      };
+
+      (window as any)[cb] = (data: any) => {
+        cleanup();
+        if (!data || data.status !== 'success' || !data.query) {
+          reject(new Error(data?.message || 'ip-api fail'));
+          return;
+        }
+        resolve(mapIpApi(data));
+      };
+
+      const sep = url.includes('?') ? '&' : '?';
+      script.src = `${url}${sep}callback=${cb}`;
+      script.onerror = () => { cleanup(); reject(new Error('ip-api network')); };
+      document.body.appendChild(script);
+    });
+  };
+
+  const fetchIpApi = async (): Promise<IPInfo> => {
+    let lastErr: unknown = new Error('ip-api unreachable');
+    for (const url of ipApiEndpoints()) {
+      try {
+        return await fetchIpApiJson(url);
+      } catch (err) {
+        lastErr = err;
+        try {
+          return await fetchIpApiJsonp(url);
+        } catch (err2) {
+          lastErr = err2;
+        }
+      }
+    }
+    throw lastErr;
+  };
+
+  // 回落：太平洋电脑网 JSONP（国内 HTTPS，信息全）
+  const fetchPconline = (): Promise<IPInfo> => {
+    return new Promise((resolve, reject) => {
+      const cb = `_ipcb_${Date.now().toString(36)}`;
+      const script = document.createElement('script');
+      const timer = setTimeout(() => { cleanup(); reject(new Error('timeout')); }, 8000);
+
+      const cleanup = () => {
+        clearTimeout(timer);
+        delete (window as any)[cb];
+        script.remove();
+      };
+
+      (window as any)[cb] = (data: any) => {
+        cleanup();
+        if (data && data.ip) {
+          const isp = extractISP(data.addr || '');
+          resolve({
+            ip: data.ip,
+            region: extractRegion(data.addr || '', isp),
+            isp,
+            source: 'pconline',
+          });
+        } else {
+          reject(new Error('no data'));
+        }
+      };
+
+      script.src = `https://whois.pconline.com.cn/ipJson.jsp?json=true&callback=${cb}`;
+      script.charset = 'GBK'; // 接口返回GBK编码，必须指定否则中文乱码
+      script.onerror = () => { cleanup(); reject(new Error('network')); };
+      document.body.appendChild(script);
+    });
+  };
+
+  // 备用：ipify（仅获取 IP）
+  const fetchIpify = (): Promise<IPInfo> => {
+    return fetch('https://api.ipify.org?format=json')
+      .then(r => r.json())
+      .then(d => ({ ip: d.ip, region: '', isp: '', source: 'ipify' as const }));
+  };
+
   const fetchIP = () => {
     content.innerHTML = '<span style="font-size:0.82rem;color:var(--view-text-muted);">加载中…</span>';
 
-    // 太平洋电脑网 JSONP 接口（国内可访问，信息全：IP/省份/城市/运营商）
-    const fetchPconline = (): Promise<{ ip: string; region: string; isp: string }> => {
-      return new Promise((resolve, reject) => {
-        const cb = `_ipcb_${Date.now().toString(36)}`;
-        const script = document.createElement('script');
-        const timer = setTimeout(() => { cleanup(); reject(new Error('timeout')); }, 8000);
-
-        const cleanup = () => {
-          clearTimeout(timer);
-          delete (window as any)[cb];
-          script.remove();
-        };
-
-        (window as any)[cb] = (data: any) => {
-          cleanup();
-          if (data && data.ip) {
-            const isp = extractISP(data.addr || '');
-            resolve({
-              ip: data.ip,
-              region: extractRegion(data.addr || '', isp),
-              isp,
-            });
-          } else {
-            reject(new Error('no data'));
-          }
-        };
-
-        script.src = `https://whois.pconline.com.cn/ipJson.jsp?json=true&callback=${cb}`;
-        script.charset = 'GBK'; // 接口返回GBK编码，必须指定否则中文乱码
-        script.onerror = () => { cleanup(); reject(new Error('network')); };
-        document.body.appendChild(script);
-      });
-    };
-
-    // 备用：ipify（仅获取 IP）
-    const fetchIpify = (): Promise<{ ip: string; region: string; isp: string }> => {
-      return fetch('https://api.ipify.org?format=json')
-        .then(r => r.json())
-        .then(d => ({ ip: d.ip, region: '', isp: '' }));
-    };
-
     const doFetch = async () => {
       try {
-        let result = await fetchPconline();
+        if (isRateLimited()) {
+          // 限流窗口内不打接口，尽量用缓存顶一下
+          const raw = localStorage.getItem(CACHE_KEY);
+          if (raw) {
+            try {
+              render(JSON.parse(raw).data);
+              return;
+            } catch { /* ignore */ }
+          }
+        }
+
+        let result: IPInfo;
+        try {
+          result = await fetchIpApi();
+        } catch {
+          result = await fetchPconline();
+        }
         if (isPrivateIP(result.ip)) {
           result = await fetchIpify();
         }

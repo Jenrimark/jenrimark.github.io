@@ -2001,6 +2001,26 @@ html[data-view-theme='dark'] .view-big-clock {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.view-ipinfo__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+}
+.view-ipinfo__tag {
+  font-size: 0.7rem;
+  line-height: 1;
+  padding: 0.28rem 0.5rem;
+  border-radius: 999px;
+  color: var(--view-text-muted);
+  background: color-mix(in srgb, var(--view-text) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--view-text) 10%, transparent);
+}
+.view-ipinfo__tag--warn {
+  color: #ff9f0a;
+  background: color-mix(in srgb, #ff9f0a 12%, transparent);
+  border-color: color-mix(in srgb, #ff9f0a 28%, transparent);
+}
 
 /* ==================== 快捷翻译 ==================== */
 .view-tile--translate {
