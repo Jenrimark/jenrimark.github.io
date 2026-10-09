@@ -416,16 +416,48 @@ function initIPInfo() {
   refreshBtn?.addEventListener('click', fetchIP);
 }
 
+// ==================== 全文查看弹层 ====================
+function openTextViewer(title: string, text: string) {
+  const root = document.getElementById('view-text-viewer');
+  const titleEl = document.getElementById('view-text-viewer-title');
+  const bodyEl = document.getElementById('view-text-viewer-body');
+  const closeBtn = document.getElementById('view-text-viewer-close');
+  if (!root || !bodyEl) return;
+
+  if (titleEl) titleEl.textContent = title;
+  bodyEl.textContent = text || '（空）';
+  root.hidden = false;
+
+  const close = () => {
+    root.hidden = true;
+    document.removeEventListener('keydown', onKey);
+    root.removeEventListener('click', onBackdrop);
+    closeBtn?.removeEventListener('click', close);
+  };
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') close();
+  };
+  const onBackdrop = (e: MouseEvent) => {
+    if (e.target === root) close();
+  };
+
+  closeBtn?.addEventListener('click', close);
+  root.addEventListener('click', onBackdrop);
+  document.addEventListener('keydown', onKey);
+  closeBtn?.focus();
+}
+
 // ==================== 快捷翻译 ====================
 function initTranslate() {
   const input = document.getElementById('view-translate-input') as HTMLTextAreaElement | null;
   const fromSel = document.getElementById('view-translate-from') as HTMLSelectElement | null;
   const toSel = document.getElementById('view-translate-to') as HTMLSelectElement | null;
   const swapBtn = document.getElementById('view-translate-swap');
-  const translateBtn = document.getElementById('view-translate-btn');
   const resultEl = document.getElementById('view-translate-result');
   const copyBtn = document.getElementById('view-translate-copy');
-  if (!input || !fromSel || !toSel || !translateBtn || !resultEl) return;
+  const inputViewBtn = document.getElementById('view-translate-input-view');
+  const resultViewBtn = document.getElementById('view-translate-result-view');
+  if (!input || !fromSel || !toSel || !resultEl) return;
 
   const langMap: Record<string, string> = {
     'auto': 'autodetect',
@@ -435,16 +467,32 @@ function initTranslate() {
     'ko': 'ko',
   };
 
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let requestId = 0;
+
+  inputViewBtn?.addEventListener('click', () => {
+    openTextViewer('原文', input.value);
+  });
+  resultViewBtn?.addEventListener('click', () => {
+    openTextViewer('译文', resultEl.textContent || '');
+  });
+
   swapBtn?.addEventListener('click', () => {
     if (fromSel.value === 'auto') return;
     const tmp = fromSel.value;
     fromSel.value = toSel.value;
     toSel.value = tmp;
+    schedule();
   });
 
   const doTranslate = async () => {
     const text = input.value.trim();
-    if (!text) { resultEl.textContent = ''; if (copyBtn) copyBtn.hidden = true; return; }
+    if (!text) {
+      resultEl.textContent = '';
+      if (copyBtn) copyBtn.hidden = true;
+      return;
+    }
+    const id = ++requestId;
     resultEl.textContent = '翻译中…';
     resultEl.style.color = 'var(--view-text-muted)';
     try {
@@ -452,24 +500,31 @@ function initTranslate() {
       const to = langMap[toSel.value] || 'en';
       const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`);
       const data = await res.json();
+      if (id !== requestId) return;
       if (data.responseStatus === 200 && data.responseData) {
         resultEl.textContent = data.responseData.translatedText;
         resultEl.style.color = 'var(--view-text)';
-        copyBtn!.hidden = false;
+        if (copyBtn) copyBtn.hidden = false;
       } else {
         resultEl.textContent = '翻译失败，请稍后重试';
         resultEl.style.color = '#ff453a';
       }
     } catch {
+      if (id !== requestId) return;
       resultEl.textContent = '网络请求失败';
       resultEl.style.color = '#ff453a';
     }
   };
 
-  translateBtn.addEventListener('click', doTranslate);
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) doTranslate();
-  });
+  // 输入后 0.5s 自动翻译
+  const schedule = () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => void doTranslate(), 500);
+  };
+
+  input.addEventListener('input', schedule);
+  fromSel.addEventListener('change', schedule);
+  toSel.addEventListener('change', schedule);
 
   copyBtn?.addEventListener('click', () => {
     navigator.clipboard.writeText(resultEl.textContent || '').then(() => {
@@ -503,7 +558,9 @@ function initQRCode() {
   const generate = async () => {
     const text = input.value.trim();
     if (!text) {
-      canvas.innerHTML = '<span style="font-size:0.8rem;color:var(--view-text-muted);">输入后生成</span>';
+      // 空内容不渲染占位底板
+      canvas.innerHTML = '';
+      canvas.classList.remove('is-active');
       downloadBtn!.hidden = true;
       qrInstance = null;
       return;
@@ -511,6 +568,7 @@ function initQRCode() {
     try {
       await loadQRCodeLib();
       canvas.innerHTML = '';
+      canvas.classList.add('is-active');
       qrInstance = new (window as any).QRCode(canvas, {
         text,
         width: 160,
@@ -522,6 +580,7 @@ function initQRCode() {
       downloadBtn!.hidden = false;
     } catch {
       canvas.innerHTML = '<span style="font-size:0.8rem;color:#ff453a;">生成失败</span>';
+      canvas.classList.remove('is-active');
     }
   };
 

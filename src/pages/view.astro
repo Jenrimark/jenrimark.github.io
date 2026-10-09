@@ -165,15 +165,15 @@ import { searchEngines } from '../data/view-search';
         <div class="view-widget__header">
           <h3 class="view-widget__title">记事本</h3>
           <div class="view-notepad__actions">
-            <button type="button" id="view-notepad-open" class="view-widget__add view-notepad__btn" title="打开文件">开</button>
-            <button type="button" id="view-notepad-save" class="view-widget__add view-notepad__btn" title="保存（Ctrl/Cmd+Enter）">存</button>
-            <button type="button" id="view-notepad-export" class="view-widget__add view-notepad__btn" title="另存为文件">出</button>
+            <button type="button" id="view-notepad-save" class="view-widget__add view-notepad__btn" title="保存（Ctrl/Cmd+S）">保存</button>
+            <button type="button" id="view-notepad-open" class="view-widget__add view-notepad__btn" title="读取文件">读取</button>
+            <button type="button" id="view-notepad-export" class="view-widget__add view-notepad__btn" title="另存为文件">另存为</button>
           </div>
         </div>
         <textarea
           id="view-notepad-content"
           class="view-notepad__content"
-          placeholder="在这里写点什么…（自动保存；Ctrl/Cmd+S 或 Ctrl/Cmd+Enter 保存）"
+          placeholder="在这里写点什么…"
           spellcheck="false"
           wrap="soft"
         ></textarea>
@@ -246,13 +246,29 @@ import { searchEngines } from '../data/view-search';
             <option value="ko">韩语</option>
           </select>
         </div>
-        <textarea id="view-translate-input" class="view-translate__input" placeholder="输入要翻译的文字…" rows="2"></textarea>
-        <button type="button" id="view-translate-btn" class="view-translate__btn">翻译</button>
+        <div class="view-translate__input-wrap">
+          <textarea id="view-translate-input" class="view-translate__input" placeholder="输入后自动翻译…" rows="2"></textarea>
+          <button type="button" id="view-translate-input-view" class="view-translate__mini" title="查看全文">查看</button>
+        </div>
         <div class="view-translate__result-wrap">
           <p id="view-translate-result" class="view-translate__result"></p>
-          <button type="button" id="view-translate-copy" class="view-translate__copy" title="复制" hidden>复制</button>
+          <div class="view-translate__result-actions">
+            <button type="button" id="view-translate-copy" class="view-translate__mini" title="复制" hidden>复制</button>
+            <button type="button" id="view-translate-result-view" class="view-translate__mini" title="查看全文">查看</button>
+          </div>
         </div>
       </section>
+
+      <!-- 翻译全文弹层 -->
+      <div id="view-text-viewer" class="view-text-viewer" hidden>
+        <div class="view-text-viewer__panel view-glass" role="dialog" aria-modal="true">
+          <div class="view-text-viewer__header">
+            <span id="view-text-viewer-title" class="view-text-viewer__title">查看全文</span>
+            <button type="button" id="view-text-viewer-close" class="view-text-viewer__close" title="关闭">×</button>
+          </div>
+          <div id="view-text-viewer-body" class="view-text-viewer__body"></div>
+        </div>
+      </div>
 
       <!-- 二维码生成组件 -->
       <section class="view-tile view-tile--qrcode view-glass" data-tile="qrcode" aria-label="二维码生成">

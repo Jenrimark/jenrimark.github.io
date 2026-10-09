@@ -2011,10 +2011,11 @@ html[data-view-theme='dark'] .view-big-clock {
 .view-music__btn--play {
   width: 40px;
   height: 40px;
-  background: var(--view-text);
-  color: var(--view-bg);
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,0.35);
 }
-.view-music__btn--play:hover { background: var(--view-text); opacity: 0.9; }
+.view-music__btn--play:hover { background: rgba(255,255,255,0.12); opacity: 1; }
 
 /* ==================== IP信息 ==================== */
 .view-tile--ipinfo {
@@ -2078,7 +2079,8 @@ html[data-view-theme='dark'] .view-big-clock {
   gap: 0.5rem;
   padding: 1.25rem 1.4rem;
   border-radius: 22px;
-  overflow-y: auto;
+  overflow: hidden;
+  min-width: 0;
 }
 .view-translate__langs {
   display: flex;
@@ -2108,9 +2110,18 @@ html[data-view-theme='dark'] .view-big-clock {
 }
 .view-translate__swap:hover { color: var(--view-text); }
 
+.view-translate__input-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
 .view-translate__input {
   width: 100%;
-  padding: 0.5rem 0.65rem;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 3.2rem 0.5rem 0.65rem;
   font-size: 0.82rem;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.12);
@@ -2120,6 +2131,8 @@ html[data-view-theme='dark'] .view-big-clock {
   font-family: inherit;
   outline: none;
   transition: border-color 0.15s;
+  overflow-x: auto;
+  white-space: pre-wrap;
 }
 .view-translate__input:focus { border-color: rgba(255,255,255,0.3); }
 .view-translate__input::placeholder { color: var(--view-text-muted); }
@@ -2140,32 +2153,114 @@ html[data-view-theme='dark'] .view-big-clock {
 .view-translate__result-wrap {
   position: relative;
   flex: 1;
+  min-width: 0;
+  max-width: 100%;
   padding: 0.6rem 0.75rem;
   background: rgba(255,255,255,0.06);
   border-radius: 10px;
-  min-height: 3rem;
+  min-height: 3.6rem;
+  overflow: hidden;
 }
 .view-translate__result {
   margin: 0;
+  padding-right: 0.2rem;
   font-size: 0.82rem;
   color: var(--view-text);
   line-height: 1.5;
   word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  max-height: 5.2rem;
+  overflow: hidden;
 }
-.view-translate__copy {
-  position: absolute;
-  top: 0.35rem;
-  right: 0.35rem;
-  padding: 0.2rem 0.5rem;
+.view-translate__result-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+.view-translate__mini {
+  padding: 0.22rem 0.55rem;
   font-size: 0.7rem;
   background: rgba(255,255,255,0.1);
   color: var(--view-text-muted);
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: color 0.15s;
+  transition: color 0.15s, background 0.15s;
 }
-.view-translate__copy:hover { color: var(--view-text); }
+.view-translate__mini:hover {
+  color: var(--view-text);
+  background: rgba(255,255,255,0.18);
+}
+.view-translate__input-wrap .view-translate__mini {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+}
+
+/* 全文弹层：居中、透明玻璃 */
+.view-text-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.view-text-viewer[hidden] { display: none !important; }
+.view-text-viewer__panel {
+  width: min(720px, 100%);
+  max-height: min(72vh, 640px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  padding: 1rem 1.15rem;
+  background: rgba(28, 28, 36, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+}
+.view-text-viewer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.view-text-viewer__title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--view-text-muted);
+}
+.view-text-viewer__close {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--view-text);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.view-text-viewer__close:hover { background: rgba(255, 255, 255, 0.22); }
+.view-text-viewer__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--view-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  padding-right: 0.25rem;
+}
 
 /* ==================== 二维码生成 ==================== */
 .view-tile--qrcode {
@@ -2196,8 +2291,12 @@ html[data-view-theme='dark'] .view-big-clock {
   height: 160px;
   display: grid;
   place-items: center;
-  background: white;
+  background: transparent;
   border-radius: 12px;
+  padding: 0;
+}
+.view-qrcode__canvas.is-active {
+  background: white;
   padding: 8px;
 }
 .view-qrcode__canvas img,
