@@ -248,11 +248,13 @@ import { searchEngines } from '../data/view-search';
         </div>
         <div class="view-translate__input-wrap">
           <textarea id="view-translate-input" class="view-translate__input" placeholder="输入后自动翻译…" rows="2"></textarea>
-          <button type="button" id="view-translate-input-view" class="view-translate__mini" title="查看全文">查看</button>
+          <div class="view-translate__overlay-actions">
+            <button type="button" id="view-translate-input-view" class="view-translate__mini" title="查看全文">查看</button>
+          </div>
         </div>
-        <div class="view-translate__result-wrap">
-          <p id="view-translate-result" class="view-translate__result"></p>
-          <div class="view-translate__result-actions">
+        <div class="view-translate__input-wrap view-translate__input-wrap--result">
+          <div id="view-translate-result" class="view-translate__result" aria-live="polite"></div>
+          <div class="view-translate__overlay-actions">
             <button type="button" id="view-translate-copy" class="view-translate__mini" title="复制" hidden>复制</button>
             <button type="button" id="view-translate-result-view" class="view-translate__mini" title="查看全文">查看</button>
           </div>

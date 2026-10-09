@@ -2117,18 +2117,23 @@ html[data-view-theme='dark'] .view-big-clock {
   min-width: 0;
 }
 
-.view-translate__input {
+.view-translate__input,
+.view-translate__input-wrap--result {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  padding: 0.5rem 3.2rem 0.5rem 0.65rem;
+  padding: 0.5rem 3.6rem 0.5rem 0.65rem;
   font-size: 0.82rem;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 10px;
   color: var(--view-text);
-  resize: none;
   font-family: inherit;
+  line-height: 1.5;
+}
+
+.view-translate__input {
+  resize: none;
   outline: none;
   transition: border-color 0.15s;
   overflow-x: auto;
@@ -2137,52 +2142,43 @@ html[data-view-theme='dark'] .view-big-clock {
 .view-translate__input:focus { border-color: rgba(255,255,255,0.3); }
 .view-translate__input::placeholder { color: var(--view-text-muted); }
 
-.view-translate__btn {
-  padding: 0.45rem;
-  font-size: 0.82rem;
-  background: var(--view-text);
-  color: var(--view-bg);
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: opacity 0.15s;
-}
-.view-translate__btn:hover { opacity: 0.9; }
-
-.view-translate__result-wrap {
-  position: relative;
+/* 译文框：与原文框同底同框，内容可滚动 */
+.view-translate__input-wrap--result {
   flex: 1;
-  min-width: 0;
-  max-width: 100%;
-  padding: 0.6rem 0.75rem;
-  background: rgba(255,255,255,0.06);
-  border-radius: 10px;
   min-height: 3.6rem;
   overflow: hidden;
 }
 .view-translate__result {
+  height: 100%;
+  max-height: 5.4rem;
+  overflow: auto;
   margin: 0;
-  padding-right: 0.2rem;
+  padding-right: 0.15rem;
   font-size: 0.82rem;
   color: var(--view-text);
   line-height: 1.5;
   word-break: break-word;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
-  max-height: 5.2rem;
-  overflow: hidden;
+  scrollbar-width: thin;
 }
-.view-translate__result-actions {
+.view-translate__result::-webkit-scrollbar { width: 4px; height: 4px; }
+.view-translate__result::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.22);
+  border-radius: 4px;
+}
+
+.view-translate__overlay-actions {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
   display: flex;
-  justify-content: flex-end;
-  gap: 0.35rem;
-  margin-top: 0.45rem;
+  gap: 0.3rem;
 }
 .view-translate__mini {
   padding: 0.22rem 0.55rem;
   font-size: 0.7rem;
-  background: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.12);
   color: var(--view-text-muted);
   border: none;
   border-radius: 6px;
@@ -2191,12 +2187,7 @@ html[data-view-theme='dark'] .view-big-clock {
 }
 .view-translate__mini:hover {
   color: var(--view-text);
-  background: rgba(255,255,255,0.18);
-}
-.view-translate__input-wrap .view-translate__mini {
-  position: absolute;
-  top: 0.35rem;
-  right: 0.35rem;
+  background: rgba(255,255,255,0.2);
 }
 
 /* 全文弹层：居中、透明玻璃 */
@@ -2271,6 +2262,11 @@ html[data-view-theme='dark'] .view-big-clock {
   padding: 1.25rem 1.4rem;
   border-radius: 22px;
   overflow-y: auto;
+}
+/* 标题与分割线通栏，与其他卡片一致 */
+.view-tile--qrcode .view-widget__header {
+  width: 100%;
+  align-self: stretch;
 }
 .view-qrcode__input {
   width: 100%;
