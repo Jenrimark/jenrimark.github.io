@@ -7,9 +7,6 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "predev": "npm run zip:extension",
-    "zip:extension": "node scripts/zip-extension.mjs",
-    "prebuild": "npm run zip:extension",
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",

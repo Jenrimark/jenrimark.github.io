@@ -67,21 +67,13 @@ jenrimark.github.io/
 │   ├── favicon.svg / favicon.ico
 │   ├── jenrimark-logo.svg / jenrimark-emblem.svg
 │   ├── healthz                        # 健康检查端点
-│   ├── view/backgrounds/              # view 背景图
-│   └── downloads/                     # 浏览器扩展 zip
-│
-├── extension/                         # Chrome 扩展源码
-│   ├── manifest.json
-│   ├── background.js / content.js
-│   └── README.md
+│   └── view/backgrounds/              # view 背景图
 │
 ├── deploy/                            # 部署相关
 │   ├── nginx/ip-api-proxy.conf        #   IP-API 同源反代（Nginx）
 │   ├── scripts/                       #   Windows 部署 / SSH / Webhook 脚本
 │   ├── windows/                       #   .bat 启动器
 │   └── frp/                           #   内网穿透示例
-│
-├── scripts/zip-extension.mjs          # 打包扩展 zip 的构建脚本
 │
 ├── .github/workflows/
 │   ├── ci.yml                         # 推送 / PR 类型检查
