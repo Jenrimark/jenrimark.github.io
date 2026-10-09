@@ -113,7 +113,7 @@ function initIPInfo() {
   const RL_KEY = 'view:ipinfo:rl';
   // 只请求展示用到的字段，降低体积
   const IP_API_FIELDS =
-    'status,message,query,country,regionName,city,isp,org,as,timezone,offset,mobile,proxy,hosting';
+    'status,message,query,country,regionName,city,district,isp,lat,lon,timezone,mobile,proxy,hosting';
   // Nginx 反代前缀（与 view-autocomplete 的 /proxy 约定一致）
   const IP_API_PROXY = '/proxy/ip-api/json/';
 
@@ -121,9 +121,9 @@ function initIPInfo() {
     ip: string;
     region: string;
     isp: string;
+    lat?: number;
+    lon?: number;
     timezone?: string;
-    offset?: number;
-    as?: string;
     mobile?: boolean;
     proxy?: boolean;
     hosting?: boolean;
@@ -141,14 +141,12 @@ function initIPInfo() {
       }
     });
 
-  const formatOffset = (seconds?: number): string => {
-    if (typeof seconds !== 'number' || !isFinite(seconds)) return '';
-    const sign = seconds >= 0 ? '+' : '-';
-    const abs = Math.abs(seconds);
-    const h = Math.floor(abs / 3600);
-    const m = Math.floor((abs % 3600) / 60);
-    return m ? `UTC${sign}${h}:${String(m).padStart(2, '0')}` : `UTC${sign}${h}`;
+  const formatLatLon = (lat?: number, lon?: number): string => {
+    if (typeof lat !== 'number' || typeof lon !== 'number') return '';
+    return `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
   };
+
+  const yesNo = (v: boolean): string => (v ? '是' : '否');
 
   const render = (data: IPInfo) => {
     const rows: Array<[string, string]> = [
@@ -156,27 +154,19 @@ function initIPInfo() {
       ['地区', data.region],
       ['运营商', data.isp || '未知'],
     ];
-    if (data.timezone) {
-      const offset = formatOffset(data.offset);
-      rows.push(['时区', offset ? `${data.timezone} (${offset})` : data.timezone]);
-    }
-    if (data.as) rows.push(['AS', data.as]);
+    const latLon = formatLatLon(data.lat, data.lon);
+    if (latLon) rows.push(['经纬度', latLon]);
+    if (data.timezone) rows.push(['时区', data.timezone]);
+    if (typeof data.mobile === 'boolean') rows.push(['移动网络', yesNo(data.mobile)]);
+    if (typeof data.proxy === 'boolean') rows.push(['代理/VPN', yesNo(data.proxy)]);
+    if (typeof data.hosting === 'boolean') rows.push(['机房', yesNo(data.hosting)]);
 
-    const tags: string[] = [];
-    if (data.mobile) tags.push('移动网络');
-    if (data.proxy) tags.push('代理/VPN');
-    if (data.hosting) tags.push('机房');
-
-    content.innerHTML =
-      rows
-        .map(
-          ([label, value]) =>
-            `<div class="view-ipinfo__row"><span class="view-ipinfo__label">${label}</span><span class="view-ipinfo__value" title="${escapeHtml(value)}">${escapeHtml(value) || '--'}</span></div>`
-        )
-        .join('') +
-      (tags.length
-        ? `<div class="view-ipinfo__tags">${tags.map((t) => `<span class="view-ipinfo__tag${t === '代理/VPN' ? ' view-ipinfo__tag--warn' : ''}">${escapeHtml(t)}</span>`).join('')}</div>`
-        : '');
+    content.innerHTML = rows
+      .map(
+        ([label, value]) =>
+          `<div class="view-ipinfo__row"><span class="view-ipinfo__label">${label}</span><span class="view-ipinfo__value" title="${escapeHtml(value)}">${escapeHtml(value) || '--'}</span></div>`
+      )
+      .join('');
   };
 
   // 从完整地址 / ISP 文本中提取运营商（兼容中英文）
@@ -236,11 +226,11 @@ function initIPInfo() {
     const ispRaw = data.isp || data.org || '';
     return {
       ip: data.query,
-      region: [data.country, data.regionName, data.city].filter(Boolean).join(' · '),
+      region: [data.country, data.regionName, data.city, data.district].filter(Boolean).join(' · '),
       isp: extractISP(ispRaw) || ispRaw,
+      lat: typeof data.lat === 'number' ? data.lat : undefined,
+      lon: typeof data.lon === 'number' ? data.lon : undefined,
       timezone: data.timezone || '',
-      offset: typeof data.offset === 'number' ? data.offset : undefined,
-      as: data.as || '',
       mobile: !!data.mobile,
       proxy: !!data.proxy,
       hosting: !!data.hosting,
