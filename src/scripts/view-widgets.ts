@@ -108,7 +108,8 @@ function initIPInfo() {
   const refreshBtn = document.getElementById('view-ipinfo-refresh');
   if (!content) return;
 
-  const CACHE_KEY = 'view:ipinfo';
+  // v2：字段集变更后让旧缓存失效
+  const CACHE_KEY = 'view:ipinfo:v2';
   const CACHE_TTL = 24 * 60 * 60 * 1000;
   const RL_KEY = 'view:ipinfo:rl';
   // 只请求展示用到的字段，降低体积
@@ -142,7 +143,7 @@ function initIPInfo() {
     });
 
   const formatLatLon = (lat?: number, lon?: number): string => {
-    if (typeof lat !== 'number' || typeof lon !== 'number') return '';
+    if (typeof lat !== 'number' || !isFinite(lat) || typeof lon !== 'number' || !isFinite(lon)) return '--';
     return `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
   };
 
@@ -153,9 +154,8 @@ function initIPInfo() {
       ['IP', data.ip],
       ['地区', data.region],
       ['运营商', data.isp || '未知'],
+      ['经纬度', formatLatLon(data.lat, data.lon)],
     ];
-    const latLon = formatLatLon(data.lat, data.lon);
-    if (latLon) rows.push(['经纬度', latLon]);
     if (data.timezone) rows.push(['时区', data.timezone]);
     if (typeof data.mobile === 'boolean') rows.push(['移动网络', yesNo(data.mobile)]);
     if (typeof data.proxy === 'boolean') rows.push(['代理/VPN', yesNo(data.proxy)]);
@@ -224,12 +224,14 @@ function initIPInfo() {
 
   const mapIpApi = (data: any): IPInfo => {
     const ispRaw = data.isp || data.org || '';
+    const lat = Number(data.lat);
+    const lon = Number(data.lon);
     return {
       ip: data.query,
       region: [data.country, data.regionName, data.city, data.district].filter(Boolean).join(' · '),
       isp: extractISP(ispRaw) || ispRaw,
-      lat: typeof data.lat === 'number' ? data.lat : undefined,
-      lon: typeof data.lon === 'number' ? data.lon : undefined,
+      lat: Number.isFinite(lat) ? lat : undefined,
+      lon: Number.isFinite(lon) ? lon : undefined,
       timezone: data.timezone || '',
       mobile: !!data.mobile,
       proxy: !!data.proxy,
