@@ -14,7 +14,7 @@ import { initViewClock } from './view-clock';
 import { initViewWeather } from './view-weather';
 import { initViewQuote } from './view-quote';
 import { initViewTodo } from './view-todo';
-import { initViewCountdown } from './view-countdown';
+import { initViewNotepad } from './view-notepad';
 import { initViewLayout } from './view-layout';
 
 function getEngine(id: SearchEngineId) {
@@ -443,7 +443,7 @@ export function initViewPage() {
   void initViewWeather();
   void initViewQuote();
   initViewTodo();
-  initViewCountdown();
+  initViewNotepad();
   initViewLayout();
 }
 

@@ -347,7 +347,9 @@ html[data-view-theme='dark'] .view-glass--interactive:hover {
 .view-tile--countdown {
   grid-column: 5 / span 4;
   grid-row: 4 / span 3;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: 1.25rem 1.4rem;
   border-radius: 22px;
 }
@@ -1623,6 +1625,53 @@ html[data-view-theme='dark'] .view-big-clock {
 }
 .view-widget__add:hover {
   background: rgba(255,255,255,0.2);
+}
+
+/* 记事本 */
+.view-notepad__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.view-notepad__btn {
+  width: auto !important;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 0.45rem !important;
+  border-radius: 8px !important;
+  font-size: 0.72rem !important;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.view-notepad__btn.is-flash {
+  background: rgba(255, 255, 255, 0.28);
+}
+.view-notepad__content {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--view-text);
+  font-family: inherit;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  /* 不超出卡片：自动折行 + 禁止横向滚动 */
+  overflow-x: hidden;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
+}
+.view-notepad__content::placeholder {
+  color: var(--view-text-muted);
+  opacity: 0.75;
 }
 
 /* 待办 */

@@ -28,7 +28,7 @@ const TILE_LABELS: Record<string, string> = {
   search: '搜索',
   links: '快捷链接',
   todo: '待办',
-  countdown: '倒数日',
+  countdown: '记事本',
   music: '音乐播放器',
   ipinfo: 'IP信息',
   translate: '快捷翻译',

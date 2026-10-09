@@ -160,11 +160,24 @@ import { searchEngines } from '../data/view-search';
         </form>
       </section>
 
-      <!-- 倒数日组件 -->
-      <section class="view-tile view-tile--countdown view-glass" data-tile="countdown" aria-label="倒数日">
-        <h3 class="view-widget__title">倒数日</h3>
-        <ul id="view-countdown-list" class="view-countdown-list"></ul>
-        <button type="button" id="view-countdown-add" class="view-countdown-add">+ 添加</button>
+      <!-- 记事本组件 -->
+      <section class="view-tile view-tile--countdown view-glass" data-tile="countdown" aria-label="记事本">
+        <div class="view-widget__header">
+          <h3 class="view-widget__title">记事本</h3>
+          <div class="view-notepad__actions">
+            <button type="button" id="view-notepad-open" class="view-widget__add view-notepad__btn" title="打开文件">开</button>
+            <button type="button" id="view-notepad-save" class="view-widget__add view-notepad__btn" title="保存（Ctrl/Cmd+Enter）">存</button>
+            <button type="button" id="view-notepad-export" class="view-widget__add view-notepad__btn" title="另存为文件">出</button>
+          </div>
+        </div>
+        <textarea
+          id="view-notepad-content"
+          class="view-notepad__content"
+          placeholder="在这里写点什么…（自动保存；Ctrl/Cmd+S 或 Ctrl/Cmd+Enter 保存）"
+          spellcheck="false"
+          wrap="soft"
+        ></textarea>
+        <input type="file" id="view-notepad-file" accept=".txt,.md,.log,text/plain,text/markdown" hidden />
       </section>
 
       <!-- 音乐播放器组件 -->
