@@ -1,6 +1,5 @@
 /** 天气组件：顶栏 pill + 详情卡片，Open-Meteo 免费 API */
 
-const STORAGE_WEATHER = 'view:weather';
 const STORAGE_WEATHER_CACHE = 'view:weather-cache';
 const STORAGE_GEO = 'view:geo-cache';
 const CACHE_TTL = 30 * 60 * 1000; // 30 分钟缓存
