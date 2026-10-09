@@ -94,7 +94,6 @@ function initSearch() {
     panel: suggestPanel,
     queryList: suggestQuery,
     bookmarkList: suggestBookmarks,
-    isGoogle: () => engineId === 'google',
     onSubmit: submitQuery,
     dismissRoots: [enginesEl, form],
   });

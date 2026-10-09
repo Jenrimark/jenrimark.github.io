@@ -1,14 +1,9 @@
-/** 双列联想：左列搜索候选，右列快捷链接筛选 */
+/** 双列联想：左列搜索候选，右列快捷链接筛选
+ *  空输入/点击 → 最近搜索；输入中 → 统一走百度联想（国内可用）
+ */
 
 import { faviconSrcForRender, hydrateFaviconImages } from './favicon-cache';
 import { searchLinks, onLinksChange, type FlatLink } from './view-links-state';
-
-// Cloudflare Worker 代理地址
-// 云服务器 Nginx 反向代理前缀
-const PROXY_BASE = '/proxy';
-function proxyUrl(targetPath: string): string {
-  return `${PROXY_BASE}${targetPath}`;
-}
 
 const STORAGE_RECENT = 'view:search-recent';
 const MAX_RECENT = 8;
@@ -19,7 +14,6 @@ interface InitOptions {
   panel: HTMLElement;
   queryList: HTMLUListElement;
   bookmarkList: HTMLUListElement;
-  isGoogle: () => boolean;
   onSubmit: (query: string) => void;
   dismissRoots?: HTMLElement[];
 }
@@ -48,42 +42,7 @@ function matchRecent(query: string): string[] {
   return recent.filter((item) => item.toLowerCase().includes(q));
 }
 
-function fetchGoogleSuggestions(query: string): Promise<string[]> {
-  const q = query.trim();
-  if (!q) return Promise.resolve([]);
-
-  return new Promise((resolve) => {
-    const cb = `_gsc_${Date.now().toString(36)}`;
-    let script: HTMLScriptElement | null = null;
-
-    const finish = (items: string[]) => {
-      clearTimeout(timer);
-      delete (window as unknown as Record<string, unknown>)[cb];
-      script?.remove();
-      resolve(items);
-    };
-
-    const timer = setTimeout(() => finish([]), 3000);
-
-    (window as unknown as Record<string, unknown>)[cb] = (data: unknown) => {
-      if (!Array.isArray(data) || !Array.isArray(data[1])) {
-        finish([]);
-        return;
-      }
-      const items = (data[1] as unknown[])
-        .map((item) => (Array.isArray(item) ? String(item[0] ?? '') : String(item)))
-        .filter(Boolean);
-      finish(items);
-    };
-
-    script = document.createElement('script');
-    script.src = proxyUrl(`/google-suggest/complete/search?client=chrome&q=${encodeURIComponent(q)}&callback=${cb}`);
-    script.onerror = () => finish([]);
-    document.head.appendChild(script);
-  });
-}
-
-/** 百度搜索建议（国内可用） */
+/** 百度搜索建议：所有搜索引擎统一用这一套（国内可直连，无需代理） */
 function fetchBaiduSuggestions(query: string): Promise<string[]> {
   const q = query.trim();
   if (!q) return Promise.resolve([]);
@@ -99,7 +58,7 @@ function fetchBaiduSuggestions(query: string): Promise<string[]> {
       resolve(items);
     };
 
-    const timer = setTimeout(() => finish([]), 3000);
+    const timer = setTimeout(() => finish([]), 2500);
 
     (window as unknown as Record<string, unknown>)[cb] = (data: { s?: string[] }) => {
       if (!data || !Array.isArray(data.s)) {
@@ -118,17 +77,10 @@ function fetchBaiduSuggestions(query: string): Promise<string[]> {
 
 type QueryItem = { text: string };
 
-function mergeQuerySuggestions(recent: string[], google: string[]): QueryItem[] {
+function mergeQueryItems(recent: string[], suggest: string[]): QueryItem[] {
   const seen = new Set<string>();
   const out: QueryItem[] = [];
-  for (const text of recent) {
-    const key = text.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push({ text });
-    if (out.length >= 10) return out;
-  }
-  for (const text of google) {
+  for (const text of [...recent, ...suggest]) {
     const key = text.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
@@ -148,7 +100,6 @@ export function initSearchAutocomplete({
   panel,
   queryList,
   bookmarkList,
-  isGoogle,
   onSubmit,
   dismissRoots = [],
 }: InitOptions) {
@@ -270,21 +221,21 @@ export function initSearchAutocomplete({
     highlight();
   };
 
+  /** 空输入：只展示最近搜索；有输入：最近匹配 + 百度联想 */
   const update = async () => {
     const query = input.value;
     const id = ++requestId;
+    const trimmed = query.trim();
 
     const recent = matchRecent(query);
-    let engineSuggest: string[] = [];
-    if (query.trim()) {
-      engineSuggest = isGoogle()
-        ? await fetchGoogleSuggestions(query)
-        : await fetchBaiduSuggestions(query);
+    let suggest: string[] = [];
+    if (trimmed) {
+      suggest = await fetchBaiduSuggestions(trimmed);
     }
 
     if (id !== requestId) return;
 
-    queryItems = mergeQuerySuggestions(recent, engineSuggest);
+    queryItems = mergeQueryItems(recent, suggest);
     linkItems = searchLinks(query);
 
     active = null;
