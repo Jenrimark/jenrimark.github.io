@@ -1,0 +1,92 @@
+<script src="assets/js/main.min.js"></script>
+
+{% include analytics.html %}
+{% include fetch_google_scholar_stats.html %}
+
+<script>
+/* 菜单锚点平滑滚动：事件委托到导航容器，URL 不变；手动计算滚动位置并 clamp 到页面可滚动范围 */
+(function () {
+  var nav = document.getElementById('site-nav');
+  if (!nav) return;
+  nav.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest ? e.target.closest('a[href^="#"]') : null;
+    if (!a) return;
+    e.preventDefault();
+    var target = document.getElementById(a.getAttribute('href').slice(1));
+    if (!target) return;
+    var top = target.getBoundingClientRect().top + window.scrollY - 90; /* 避开 sticky 顶部栏 */
+    var max = document.documentElement.scrollHeight - window.innerHeight;
+    var y = Math.max(0, Math.min(top, max));
+    window.scrollTo({ top: y, behavior: 'smooth' });
+  });
+})();
+</script>
+
+<script>
+/* 中英原地切换：内容区 + 导航菜单文字/锚点同步切换，带淡入淡出动画 */
+(function () {
+  var zh = document.getElementById('content-zh');
+  var en = document.getElementById('content-en');
+  var toggle = document.getElementById('lang-toggle');
+  if (!zh || !en || !toggle) return;
+
+  var saved = null;
+  try { saved = localStorage.getItem('acad-lang'); } catch (e) {}
+  var lang = saved === 'en' ? 'en' : 'zh';
+
+  function syncNav(l) {
+    var links = document.querySelectorAll('.masthead__menu-item a');
+    for (var i = 0; i < links.length; i++) {
+      var a = links[i];
+      if (a.id === 'lang-toggle') continue;
+      var zhT = a.getAttribute('data-zh');
+      var enT = a.getAttribute('data-en');
+      if (zhT || enT) a.textContent = l === 'zh' ? zhT : enT;
+      var zhH = a.getAttribute('data-zh-href');
+      var enH = a.getAttribute('data-en-href');
+      if (zhH && enH) a.setAttribute('href', l === 'zh' ? zhH : enH);
+    }
+  }
+
+  function setLang(l) {
+    if (l === 'zh') { zh.style.display = ''; en.style.display = 'none'; }
+    else { en.style.display = ''; zh.style.display = 'none'; }
+    toggle.textContent = l === 'zh' ? 'EN' : '中文';
+    document.documentElement.lang = l;
+    syncNav(l);
+  }
+
+  /* 带淡入淡出的平滑切换 */
+  function switchLang(next) {
+    var show = next === 'zh' ? zh : en;
+    var hide = next === 'zh' ? en : zh;
+    toggle.textContent = next === 'zh' ? 'EN' : '中文';
+    document.documentElement.lang = next;
+    syncNav(next);
+
+    hide.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
+    hide.style.opacity = '0';
+    hide.style.transform = 'translateY(5px)';
+    setTimeout(function () {
+      hide.style.display = 'none';
+      show.style.display = '';
+      show.style.opacity = '0';
+      show.style.transform = 'translateY(5px)';
+      show.style.transition = 'opacity 0.28s ease, transform 0.28s ease';
+      requestAnimationFrame(function () {
+        show.style.opacity = '1';
+        show.style.transform = 'translateY(0)';
+      });
+    }, 180);
+  }
+
+  setLang(lang); /* 首屏直接呈现，无动画 */
+
+  toggle.addEventListener('click', function (e) {
+    e.preventDefault();
+    var next = zh.style.display === 'none' ? 'zh' : 'en';
+    switchLang(next);
+    try { localStorage.setItem('acad-lang', next); } catch (err) {}
+  });
+})();
+</script>

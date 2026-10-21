@@ -1,0 +1,47 @@
+# main links links
+main:
+  - title: "About Me"
+    url: "#about-me"
+    zh: "关于我"
+
+  - title: "News"
+    url: "#news-zh"
+    zh: "新闻动态"
+    zh_href: "#news-zh"
+    en_href: "#news-en"
+
+  - title: "Educations"
+    url: "#educations-zh"
+    zh: "教育经历"
+    zh_href: "#educations-zh"
+    en_href: "#educations-en"
+
+  - title: "Internships"
+    url: "#internships-zh"
+    zh: "实习经历"
+    zh_href: "#internships-zh"
+    en_href: "#internships-en"
+
+  - title: "Campus"
+    url: "#campus-zh"
+    zh: "校园经历"
+    zh_href: "#campus-zh"
+    en_href: "#campus-en"
+
+  - title: "Projects"
+    url: "#projects-zh"
+    zh: "项目作品"
+    zh_href: "#projects-zh"
+    en_href: "#projects-en"
+
+  - title: "Awards"
+    url: "#awards-zh"
+    zh: "荣誉奖项"
+    zh_href: "#awards-zh"
+    en_href: "#awards-en"
+
+  - title: "Skills"
+    url: "#skills-zh"
+    zh: "技能栈"
+    zh_href: "#skills-zh"
+    en_href: "#skills-en"

@@ -1,0 +1,85 @@
+<link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png">
+<link rel="manifest" href="images/site.webmanifest">
+
+<meta name="msapplication-TileColor" content="#000000">
+<meta name="msapplication-TileImage" content="images/mstile-144x144.png?v=M44lzPylqQ">
+<meta name="msapplication-config" content="images/browserconfig.xml?v=M44lzPylqQ">
+<meta name="theme-color" content="#ffffff">
+<link rel="stylesheet" href="assets/css/academicons.css"/>
+
+<script type="text/x-mathjax-config"> MathJax.Hub.Config({ TeX: { equationNumbers: { autoNumber: "all" } } }); </script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/latest.js?config=TeX-MML-AM_CHTML' async></script>
+
+<!-- end custom head snippets -->
+<style>
+/* 移除点击导航/按钮后的浏览器默认焦点黄框 */
+.masthead a:focus,
+.masthead a:focus-visible,
+.masthead button:focus,
+.masthead button:focus-visible,
+#lang-toggle:focus,
+#lang-toggle:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+</style>
+<style>
+/* === 菜单居中 + 语言按钮右上角固定 === */
+.masthead__menu {
+  display: flex;
+  justify-content: center;
+}
+.masthead__menu nav.greedy-nav {
+  display: inline-flex;
+  background: transparent;
+  min-width: 0;
+}
+.lang-switch {
+  position: absolute;
+  right: 1.2em;
+  top: 50%;
+  -webkit-transform: translateY(-50%);
+          transform: translateY(-50%);
+  z-index: 30;
+}
+.lang-switch a {
+  display: inline-block;
+  padding: 0.3em 0.9em;
+  border: 1px solid #d0d0d0;
+  border-radius: 999px;
+  font-size: 0.85em;
+  color: #333;
+  text-decoration: none;
+  -webkit-transition: all 0.25s ease;
+          transition: all 0.25s ease;
+}
+.lang-switch a:hover {
+  border-color: #999;
+  background: #f5f5f5;
+}
+</style>
+<style>
+/* === 语言切换淡入淡出动画 === */
+.masthead__inner-wrap { position: relative; }
+#content-zh, #content-en {
+  will-change: opacity, transform;
+}
+</style>
+<style>
+/* === 锚点平滑滚动 === */
+html { scroll-behavior: smooth; }
+</style>
+<style>
+/* === 锚点滚动避开 sticky 顶部栏 === */
+[id] { scroll-margin-top: 90px; }
+</style>
