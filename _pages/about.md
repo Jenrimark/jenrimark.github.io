@@ -41,7 +41,7 @@ redirect_from:
 - **糖知 SugarGuard · AI 智能控糖** — "ViT 图像分类 + RAG 检索 + LLM"三段式引擎：端侧 ML Kit + 云端 ViT 双路径识别（自建 264 类数据集微调），536 片段 RAG 知识库；饮品识别准确率 96.75%，RAG Top-3 命中率 87%/18ms；30 天 4 迭代发布 v1.0.0（Kotlin · SpringBoot · RAG）。
 - **智鉴车件 · 车辆故障检测** — 个人项目，Android + Flutter 多端：蓝牙连接 OBD 采集实时车况，本地+云端双模式故障检测，自动生成 PDF 检测报告；SpringBoot + MySQL 后端，Stripe 支付闭环（Android · Flutter · SpringBoot）。
 - **灵犀 · 校园生活服务平台** — SpringBoot + Vue3 + Python 后端，MySQL + Redis + RabbitMQ；解决校园生活信息分散痛点，服务在校师生，项目获省级二等奖。
-- **合租管家** — 费用分摊、值日排班、囤货登记、室友公约（Vite · React · TypeScript）。已部署：[jenrimark.github.io](https://jenrimark.github.io/) · [GitHub](https://github.com/Jenrimark/jenrimark.github.io)
+- **合租管家** — 费用分摊、值日排班、囤货登记、室友公约（Vite · React · TypeScript）。已部署：[合租管家](http://8.163.10.100/) · [GitHub](https://github.com/Jenrimark)
 - **Little-Wechat** — 独立完成登录、聊天、好友列表；WebSocket 实时通信（<100ms），Redis 缓存在线状态，数据库查询压力降约 60%，Electron 跨平台桌面端（SpringBoot · Vue3 · Redis）。
 - **tabmark-organizer** — Chrome 扩展：浏览器书签同步整理，支持 AI 优化结构与命名（JavaScript · Chrome 扩展）。
 
@@ -98,7 +98,7 @@ This homepage aggregates my education, internships, projects, competitions and s
 - **SugarGuard · Teen AI Sugar-Control App** — "ViT + RAG + LLM" three-stage engine: on-device ML Kit + cloud ViT dual-path recognition (264-class self-built dataset), 536-chunk RAG knowledge base; drink recognition 96.75%, RAG Top-3 hit 87%/18ms; shipped v1.0.0 in 30 days (Kotlin · SpringBoot · RAG).
 - **CarCheck · Vehicle Fault Detection** — Personal project, Android + Flutter: Bluetooth OBD live telemetry, local+cloud dual-mode fault detection, auto-generated PDF reports; SpringBoot + MySQL backend with Stripe payment (Android · Flutter · SpringBoot).
 - **LynxCampus · Campus Life Service Platform** — SpringBoot + Vue3 + Python, MySQL + Redis + RabbitMQ; solved fragmented campus-life info for students, project won provincial second prize.
-- **Housemate** — Expense splitting, duty scheduling, shared-stock registration, and roommate rules (Vite · React · TypeScript). Deployed: [jenrimark.github.io](https://jenrimark.github.io/) · [GitHub](https://github.com/Jenrimark/jenrimark.github.io)
+- **Housemate** — Expense splitting, duty scheduling, shared-stock registration, and roommate rules (Vite · React · TypeScript). Deployed: [Housemate](http://8.163.10.100/) · [GitHub](https://github.com/Jenrimark)
 - **Little-Wechat** — Built login, chat and friends-list; WebSocket (<100ms), Redis caching (~60% DB pressure reduction), Electron desktop client (SpringBoot · Vue3 · Redis).
 - **tabmark-organizer** — Chrome extension: bookmark sync and organization with AI-optimized structure and naming (JavaScript).
 
