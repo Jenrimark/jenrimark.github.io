@@ -1,19 +1,31 @@
 ---
-layout: default
-title: "404 · 页面不存在"
 permalink: /404.html
+sitemap: false
 ---
 
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>404 · 页面不存在 | Jenrimark</title>
+<meta name="robots" content="noindex, nofollow">
 <style>
-  .notfound { max-width: 640px; margin: 6rem auto 4rem; padding: 0 1rem; text-align: center; }
-  .notfound h1 { font-size: 4rem; line-height: 1; margin: 0 0 1rem; }
-  .notfound p { color: #666; margin: 0 0 1.5rem; }
-  .notfound a { color: #52adc8; text-decoration: none; }
-  .notfound a:hover { text-decoration: underline; }
+  html, body { margin: 0; padding: 0; height: 100%; background: #f5f4f2; color: #2c2522; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; }
+  .nf { max-width: 640px; margin: 0 auto; padding: 12vh 24px 0; text-align: center; }
+  .nf code { font-size: 5rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; background: linear-gradient(135deg, #2c2522 30%, #a35c3a); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .nf h1 { font-size: 1.5rem; margin: 1.2rem 0 0.6rem; }
+  .nf p { color: #6b6259; margin: 0 0 2rem; }
+  .nf a { color: #a35c3a; font-weight: 600; text-decoration: none; border-bottom: 1px solid rgba(163,92,58,.4); }
+  .nf a:hover { color: #7d3f22; }
 </style>
-
-<div class="notfound">
-  <h1>404</h1>
-  <p>你访问的页面不存在或已被移动。</p>
-  <p><a href="/">← 返回主页</a></p>
-</div>
+</head>
+<body>
+  <main class="nf">
+    <div><code>404</code></div>
+    <h1>页面不存在</h1>
+    <p>你访问的页面已被移动或删除。Jenrimark 个人主页只有首页一个页面。</p>
+    <p><a href="/">← 返回主页</a></p>
+  </main>
+</body>
+</html>
